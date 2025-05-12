@@ -205,12 +205,12 @@
 
 <div class="app-container min-h-screen" class:dark-mode={darkMode}>
 <!-- Header con logo e titolo -->
-<header class="primary-color py-4 px-6 flex justify-between items-center">
+<header class="bg-white py-4 px-6 flex justify-between items-center">
   <div class="flex items-center">
     <img src={logo} alt="Logo della scuola" class="h-16 w-16 mr-4 hover:scale-105 transition-transform" 
          on:error={handleImageError} />
   </div>
-  <h1 class="text-4xl font-medium text-center flex-grow text-white castelli-title">CastelliShelf</h1>
+  <h1 class="text-4xl font-medium text-center flex-grow castelli-title">CastelliShelf</h1>
   <div class="flex items-center gap-4">
     <button 
       class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" 
@@ -775,6 +775,7 @@ input, select {
 
 .castelli-title {
   font-family: 'Titillium Web', sans-serif;
+  color: rgb(58, 77, 110);
 }
 
 .primary-color {
