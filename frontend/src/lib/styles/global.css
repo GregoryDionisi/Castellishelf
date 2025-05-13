@@ -17,7 +17,7 @@
   }
   
   :root {
-    --tertiary-color: rgb(113, 173, 147);
+    --tertiary-color: rgb(200, 226, 222);
   }
   
   .map-controls {
@@ -159,9 +159,10 @@
   
   /* le card sopra il footer */
   .stat-card {
-    background-color: white;
+    background-color: var(--tertiary-color);
     border: 1px solid #e5e7eb;
     transition: all 0.3s;
+    color: rgb(51, 51, 51);
   }
   
   .stat-card:hover {
@@ -171,8 +172,9 @@
   
   
   .dark-mode .stat-card {
-    background-color: #1e1e1e;
+    background-color: var(--tertiary-color);
     border-color: #333;
+    color: rgb(51, 51, 51);
   }
   
   .ping-animation {
