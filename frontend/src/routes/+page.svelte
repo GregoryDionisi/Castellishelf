@@ -1,11 +1,15 @@
 <script>
   import { onMount, tick } from 'svelte';
   import { fade, slide, fly } from 'svelte/transition';
-  import logo from '$lib/images/LOGO.LEGGERO.trspnt.png';
-  import emblemaRepubblica from '$lib/images/Emblema della Repubblica Italiana.svg';
   import pianoTerra from '$lib/images/piano-terra.jpg';
   import pianoPrimo from '$lib/images/piano-primo.jpg';
   import pianoSecondo from '$lib/images/piano-secondo.jpg';
+
+  import '$lib/styles/global.css';
+
+  import Footer from '$lib/components/Footer.svelte';
+  import Statistics from '$lib/components/Statistics.svelte';
+  import Header from '$lib/components/Header.svelte';
   
   // Stato per gestire il piano attualmente selezionato
   let currentFloor = 0;
@@ -116,12 +120,6 @@
     showDetailsPanel = false;
   }
   
-  // Toggle tema chiaro/scuro
-  function toggleDarkMode() {
-    darkMode = !darkMode;
-    document.body.classList.toggle('dark-mode', darkMode);
-  }
-  
   // Gestione dei preferiti
   function toggleFavorite(libraryId) {
     if (userFavorites.includes(libraryId)) {
@@ -131,6 +129,12 @@
     }
     // Salva preferiti in localStorage
     localStorage.setItem('favorites', JSON.stringify(userFavorites));
+  }
+
+
+  function handleDarkModeChange(event) {
+    darkMode = event.detail.darkMode;
+    // Il toggling della classe è già gestito nel componente Header
   }
   
   // Gestore per il click su una biblioteca
@@ -175,13 +179,7 @@
     
     return path;
   }
-  
-  // Funzioni per gestire i fallimenti di caricamento delle immagini
-  function handleImageError(event) {
-    event.target.src = '/api/placeholder/64/64';
-    event.target.onerror = null;
-  }
-  
+
   function handleMapImageError(event) {
     event.target.src = '/api/placeholder/800/600';
     event.target.onerror = null;
@@ -204,67 +202,14 @@
 </script>
 
 <div class="app-container min-h-screen" class:dark-mode={darkMode}>
-<!-- Header con logo e titolo -->
-<header class="bg-white py-4 px-6 flex justify-between items-center">
-  <div class="flex items-center">
-    <img src={logo} alt="Logo della scuola" class="h-16 w-16 mr-4 hover:scale-105 transition-transform" 
-         on:error={handleImageError} />
-  </div>
-  <h1 class="text-4xl font-medium text-center flex-grow castelli-title">CastelliShelf</h1>
-  <div class="flex items-center gap-4">
-    <button 
-      class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" 
-      on:click={toggleDarkMode}
-      aria-label="Cambia tema"
-    >
-      {#if darkMode}
-        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-          <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path>
-        </svg>
-      {:else}
-        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-          <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
-        </svg>
-      {/if}
-    </button>
-    <img src={emblemaRepubblica} alt="Logo Repubblica Italiana" class="h-16 w-16" 
-         on:error={handleImageError} />
-  </div>
-</header>
+<Header {darkMode} on:darkModeChange={handleDarkModeChange}/>
 
-<!-- Barra di ricerca e filtri -->
-<div class="search-container mx-auto px-6 py-4 flex flex-wrap gap-4 items-center justify-between">
-  <div class="search-box relative w-full md:w-1/3">
-    <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-      <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path>
-    </svg>
-    <input 
-      type="text" 
-      bind:value={searchTerm}
-      placeholder="Cerca biblioteca..." 
-      class="pl-10 pr-4 py-2 w-full rounded-lg shadow-sm focus:ring-2 focus:ring-primary focus:outline-none"
-    />
-  </div>
-  
-  <div class="filter-box w-full md:w-auto">
-    <select 
-      bind:value={selectedCategory}
-      class="px-4 py-2 rounded-lg shadow-sm focus:ring-2 focus:ring-primary focus:outline-none appearance-none bg-no-repeat bg-right"
-      style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23007CB2%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E');
-      background-size: 12px 12px; padding-right: 28px;"
-    >
-      {#each categories as category}
-        <option value={category.id}>{category.name}</option>
-      {/each}
-    </select>
-  </div>
-</div>
-
-<!-- Menu dei piani -->
-<div class="floor-selector flex justify-center mb-6">
+<!-- Menu dei piani con header che occupa solo lo spazio necessario -->
+<header class="flex justify-center items-center mb-6 primary-color p-4 rounded-b-lg space-x-6 
+  w-full sm:w-10/12 md:w-8/12 lg:w-6/12 xl:w-auto mx-auto"> <!-- Gestire la larghezza in tutti i dispositivi -->
   {#each floors as floor}
     <button 
-      class="py-3 px-6 text-lg font-medium rounded-t-lg transition-all transform hover:translate-y-[-4px] relative {currentFloor === floor.id ? 'primary-color' : ''}"
+      class="py-3 px-6 text-lg font-medium rounded-t-lg transition-all transform hover:translate-y-[-4px] relative bg-blue-500 text-white hover:bg-blue-700"
       on:click={() => selectFloor(floor.id)}
     >
       <span class="flex items-center gap-2">
@@ -289,7 +234,11 @@
       {/if}
     </button>
   {/each}
-</div>
+</header>
+
+
+
+
 
 <!-- Container principale con la mappa e il pannello informativo -->
 <main class="container mx-auto px-4 flex flex-col md:flex-row gap-6">
@@ -302,6 +251,32 @@
         </svg>
         Informazioni
       </h2>
+      <!-- Barra di ricerca migliorata -->
+<div class="search-box mb-6 w-full">
+  <div class="relative">
+    <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500 dark:text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+      <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path>
+    </svg>
+    <input 
+      type="text" 
+      bind:value={searchTerm}
+      placeholder="Cerca biblioteca..." 
+      class="pl-10 pr-4 py-2 w-full rounded-lg border border-gray-300 dark:border-gray-700 shadow-sm focus:ring-2 focus:ring-primary focus:border-primary dark:focus:border-primary transition-colors dark:bg-gray-800 dark:text-white"
+    />
+  </div>
+  
+  <!-- Filtro per categorie -->
+  <div class="category-filter mt-3">
+    <select 
+      bind:value={selectedCategory}
+      class="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-700 shadow-sm focus:ring-2 focus:ring-primary focus:border-primary dark:focus:border-primary transition-colors dark:bg-gray-800 dark:text-white"
+    >
+      {#each categories as category}
+        <option value={category.id}>{category.name}</option>
+      {/each}
+    </select>
+  </div>
+</div>
       
       {#if selectedLibrary && showDetailsPanel}
         <div class="library-details rounded-lg p-5 mb-4" transition:slide>
@@ -509,291 +484,6 @@
     </div>
   </div>
 </main>
-
-<!-- Statistiche della biblioteca -->
-<section class="stats-section container mx-auto px-4 py-6 mt-6">
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-    <div class="stat-card p-4 rounded-lg shadow-md">
-      <h3 class="text-sm font-medium opacity-70">Totale Biblioteche</h3>
-      <p class="text-3xl font-bold">{libraries.length}</p>
-    </div>
-    <div class="stat-card p-4 rounded-lg shadow-md">
-      <h3 class="text-sm font-medium opacity-70">Totale Libri</h3>
-      <p class="text-3xl font-bold">{libraries.reduce((total, lib) => total + lib.books, 0)}</p>
-    </div>
-    <div class="stat-card p-4 rounded-lg shadow-md">
-      <h3 class="text-sm font-medium opacity-70">Categoria Principale</h3>
-      <p class="text-3xl font-bold">Scienze</p>
-    </div>
-    <div class="stat-card p-4 rounded-lg shadow-md">
-      <h3 class="text-sm font-medium opacity-70">Utenti Attivi</h3>
-      <p class="text-3xl font-bold">127</p>
-    </div>
-  </div>
-</section>
-
-<!-- Footer -->
-<footer class="copyright-custom-gray py-4 mt-8 text-center text-white">
-  <div class="container mx-auto px-4">
-    <div class="flex flex-col md:flex-row justify-between items-center">
-      <div class="mb-4 md:mb-0">
-        <p class="text-lg font-bold">CastelliShelf</p>
-        <p class="opacity-70">Sistema di navigazione biblioteche</p>
-      </div>
-      
-      <div class="flex space-x-4">
-        <a href="#" class="footer-link hover:underline">Home</a>
-        <a href="#" class="footer-link hover:underline">Biblioteche</a>
-        <a href="#" class="footer-link hover:underline">Contatti</a>
-        <a href="#" class="footer-link hover:underline">About</a>
-      </div>
-      
-      <div>
-        <p class="opacity-70">© 2025 CastelliShelf</p>
-      </div>
-    </div>
-  </div>
-</footer>
+<Statistics {libraries}/>
+<Footer />
 </div>
-
-<style>
-:global(body) {
-  margin: 0;
-  font-family: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
-  transition: background-color 0.3s, color 0.3s;
-}
-
-:root {
-  --primary-color: rgb(54, 123, 198);
-}
-
-:root {
-  --primary-color-darker: rgb(40, 90, 160);
-}
-
-:root {
-  --secondary-color: rgb(235, 112, 45);
-}
-
-:root {
-  --tertiary-color: rgb(113, 173, 147);
-}
-
-.map-controls {
-  background-color: white;
-  border-radius: 0.5rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-}
-
-.dark-mode .map-controls {
-  background-color: #1e1e1e;
-}
-
-
-
-.app-container {
-  background-color: #f8f9fa;
-  color: #333;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.dark-mode.app-container {
-  background-color: #121212;
-  color: #f0f0f0;
-}
-
-.info-panel {
-  background-color: white;
-  border: 1px solid #e5e7eb;
-}
-
-.dark-mode .info-panel {
-  background-color: #1e1e1e;
-  border-color: #333;
-}
-
-.library-details {
-  background-color: #f8fafc;
-  border: 1px solid #e5e7eb;
-}
-
-.dark-mode .library-details {
-  background-color: #2d2d2d;
-  border-color: #444;
-}
-
-.empty-state {
-  background-color: #f8fafc;
-  border: 1px solid #e5e7eb;
-}
-
-.dark-mode .empty-state {
-  background-color: #2d2d2d;
-  border-color: #444;
-}
-
-.stat-box {
-  background-color: #f0f9ff;
-  border: 1px solid #e0f2fe;
-}
-
-.dark-mode .stat-box {
-  background-color: #1e293b;
-  border-color: #334155;
-}
-
-.category-tag {
-  background-color: #e0f2fe;
-  color: #0369a1;
-}
-
-.dark-mode .category-tag {
-  background-color: #0c4a6e;
-  color: #bae6fd;
-}
-
-button.primary-color:hover {
-  background-color: var(--primary-color-darker);
-  transition: background-color 0.2s;
-}
-
-.favorite-item {
-  background-color: #f8fafc;
-  border: 1px solid #e5e7eb;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.favorite-item:hover {
-  background-color: #f0f9ff;
-  transform: translateY(-2px);
-}
-
-.dark-mode .favorite-item {
-  background-color: #2d2d2d;
-  border-color: #444;
-}
-
-.dark-mode .favorite-item:hover {
-  background-color: #374151;
-}
-
-.library-marker-container {
-  position: relative;
-}
-
-.library-marker {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: var(--secondary-color);
-  color: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s;
-}
-
-.library-marker.active {
-  background-color: rgb(54, 123, 198);
-  transform: scale(1.2);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.tooltip {
-  background-color: rgba(0, 0, 0, 0.8);
-  color: white;
-  white-space: nowrap;
-}
-
-.dark-mode .tooltip {
-  background-color: rgba(255, 255, 255, 0.9);
-  color: #333;
-}
-
-
-/* le card sopra il footer */
-.stat-card {
-  background-color: white;
-  border: 1px solid #e5e7eb;
-  transition: all 0.3s;
-}
-
-.stat-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-}
-
-
-.dark-mode .stat-card {
-  background-color: #1e1e1e;
-  border-color: #333;
-}
-
-.ping-animation {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background-color: rgba(59, 130, 246, 0.5);
-  animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
-}
-
-@keyframes ping {
-  0% {
-    transform: scale(1);
-    opacity: 0.8;
-  }
-  75%, 100% {
-    transform: scale(2.5);
-    opacity: 0;
-  }
-}
-
-
-.footer-link {
-  color: #93c5fd;
-}
-
-/* Input fields */
-input, select {
-  background-color: white;
-  color: #333;
-  border: 1px solid #e5e7eb;
-}
-
-/* il cerca e il menu a tendina */
-.dark-mode input, .dark-mode select {
-  background-color: #1e1e1e;
-  color: #f0f0f0;
-  border-color: #4b5563;
-}
-
-.castelli-title {
-  font-family: 'Titillium Web', sans-serif;
-  color: rgb(58, 77, 110);
-}
-
-.primary-color {
-  background-color: var(--primary-color);
-}
-.secondary-color {
-  background-color: var(--secondary-color);
-}
-.tertiary-color {
-  background-color: var(--tertiary-color);
-}
-.footer-color {
-	background-color: rgb(51, 51, 51);
-}
-.title-custom-blue {
-	color: rgb(58, 77, 110);
-}
-.copyright-custom-gray {
-	background-color: rgb(69, 69, 69);
-} 
-</style>
