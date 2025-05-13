@@ -1,0 +1,239 @@
+:global(body) {
+    margin: 0;
+    font-family: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
+    transition: background-color 0.3s, color 0.3s;
+  }
+  
+  :root {
+    --primary-color: rgb(54, 123, 198);
+  }
+  
+  :root {
+    --primary-color-darker: rgb(40, 90, 160);
+  }
+  
+  :root {
+    --secondary-color: rgb(235, 112, 45);
+  }
+  
+  :root {
+    --tertiary-color: rgb(113, 173, 147);
+  }
+  
+  .map-controls {
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+  }
+  
+  .dark-mode .map-controls {
+    background-color: #1e1e1e;
+  }
+  
+  
+  
+  .app-container {
+    background-color: #f8f9fa;
+    color: #333;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .dark-mode.app-container {
+    background-color: #121212;
+    color: #f0f0f0;
+  }
+  
+  .info-panel {
+    background-color: white;
+    border: 1px solid #e5e7eb;
+  }
+  
+  .dark-mode .info-panel {
+    background-color: #1e1e1e;
+    border-color: #333;
+  }
+  
+  .library-details {
+    background-color: #f8fafc;
+    border: 1px solid #e5e7eb;
+  }
+  
+  .dark-mode .library-details {
+    background-color: #2d2d2d;
+    border-color: #444;
+  }
+  
+  .empty-state {
+    background-color: #f8fafc;
+    border: 1px solid #e5e7eb;
+  }
+  
+  .dark-mode .empty-state {
+    background-color: #2d2d2d;
+    border-color: #444;
+  }
+  
+  .stat-box {
+    background-color: #f0f9ff;
+    border: 1px solid #e0f2fe;
+  }
+  
+  .dark-mode .stat-box {
+    background-color: #1e293b;
+    border-color: #334155;
+  }
+  
+  .category-tag {
+    background-color: #e0f2fe;
+    color: #0369a1;
+  }
+  
+  .dark-mode .category-tag {
+    background-color: #0c4a6e;
+    color: #bae6fd;
+  }
+  
+  button.primary-color:hover {
+    background-color: var(--primary-color-darker);
+    transition: background-color 0.2s;
+  }
+  
+  .favorite-item {
+    background-color: #f8fafc;
+    border: 1px solid #e5e7eb;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .favorite-item:hover {
+    background-color: #f0f9ff;
+    transform: translateY(-2px);
+  }
+  
+  .dark-mode .favorite-item {
+    background-color: #2d2d2d;
+    border-color: #444;
+  }
+  
+  .dark-mode .favorite-item:hover {
+    background-color: #374151;
+  }
+  
+  .library-marker-container {
+    position: relative;
+  }
+  
+  .library-marker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: var(--secondary-color);
+    color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s;
+  }
+  
+  .library-marker.active {
+    background-color: rgb(54, 123, 198);
+    transform: scale(1.2);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .tooltip {
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    white-space: nowrap;
+  }
+  
+  .dark-mode .tooltip {
+    background-color: rgba(255, 255, 255, 0.9);
+    color: #333;
+  }
+  
+  
+  /* le card sopra il footer */
+  .stat-card {
+    background-color: white;
+    border: 1px solid #e5e7eb;
+    transition: all 0.3s;
+  }
+  
+  .stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  }
+  
+  
+  .dark-mode .stat-card {
+    background-color: #1e1e1e;
+    border-color: #333;
+  }
+  
+  .ping-animation {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background-color: rgba(59, 130, 246, 0.5);
+    animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+  
+  @keyframes ping {
+    0% {
+      transform: scale(1);
+      opacity: 0.8;
+    }
+    75%, 100% {
+      transform: scale(2.5);
+      opacity: 0;
+    }
+  }
+  
+  
+  .footer-link {
+    color: #93c5fd;
+  }
+  
+  /* Input fields */
+  input, select {
+    background-color: white;
+    color: #333;
+    border: 1px solid #e5e7eb;
+  }
+  
+  /* il cerca e il menu a tendina */
+  .dark-mode input, .dark-mode select {
+    background-color: #1e1e1e;
+    color: #f0f0f0;
+    border-color: #4b5563;
+  }
+  
+  .castelli-title {
+    font-family: 'Titillium Web', sans-serif;
+    color: rgb(58, 77, 110);
+  }
+  
+  .primary-color {
+    background-color: var(--primary-color);
+  }
+  .secondary-color {
+    background-color: var(--secondary-color);
+  }
+  .tertiary-color {
+    background-color: var(--tertiary-color);
+  }
+  .footer-color {
+      background-color: rgb(51, 51, 51);
+  }
+  .title-custom-blue {
+      color: rgb(58, 77, 110);
+  }
+  .copyright-custom-gray {
+      background-color: rgb(69, 69, 69);
+  } 
