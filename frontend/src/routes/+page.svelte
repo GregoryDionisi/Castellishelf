@@ -205,11 +205,11 @@
 <Header {darkMode} on:darkModeChange={handleDarkModeChange}/>
 
 <!-- Menu dei piani con header che occupa solo lo spazio necessario -->
-<header class="flex justify-center items-center mb-6 primary-color p-4 rounded-b-lg space-x-6 
+<header class="flex z-10 -mt-4 justify-center items-center mb-6 primary-color p-4 rounded-lg space-x-6 
   w-full sm:w-10/12 md:w-8/12 lg:w-6/12 xl:w-auto mx-auto"> <!-- Gestire la larghezza in tutti i dispositivi -->
   {#each floors as floor}
     <button 
-      class="py-3 px-6 text-lg font-medium rounded-t-lg transition-all transform hover:translate-y-[-4px] relative bg-blue-500 text-white hover:bg-blue-700"
+      class="py-3 px-6 text-lg font-medium rounded-lg transition-all transform hover:translate-y-[-4px] relative primary-color text-white hover:bg-blue-700"
       on:click={() => selectFloor(floor.id)}
     >
       <span class="flex items-center gap-2">
@@ -230,7 +230,7 @@
         {floor.name}
       </span>
       {#if currentFloor === floor.id}
-        <div class="absolute bottom-0 left-0 w-full h-1 bg-primary rounded-t"></div>
+        <div class="absolute bottom-0 left-0 w-full h-1 bg-primary rounded-b-lg"></div>
       {/if}
     </button>
   {/each}

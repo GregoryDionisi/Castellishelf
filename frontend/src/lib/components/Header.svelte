@@ -26,7 +26,7 @@
 </script>
 
 
-<header class="bg-white py-4 px-6 flex justify-between items-center">
+<header class="bg-white z-0 py-4 px-6 flex justify-between items-center">
   <div class="flex items-center">
     <img src={logo} alt="Logo della scuola" class="h-16 w-16 mr-4 hover:scale-105 transition-transform" 
          on:error={handleImageError} />
