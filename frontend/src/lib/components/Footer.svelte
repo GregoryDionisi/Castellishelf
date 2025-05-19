@@ -12,10 +12,8 @@
         </div>
         
         <div class="flex space-x-4">
-          <a href="#" class="footer-link hover:underline">Home</a>
-          <a href="#" class="footer-link hover:underline">Biblioteche</a>
-          <a href="#" class="footer-link hover:underline">Contatti</a>
-          <a href="#" class="footer-link hover:underline">About</a>
+          <a href="/" class="footer-link hover:underline">Home</a>
+          <a href="/admin" class="footer-link hover:underline">Admin</a>
         </div>
         
         <div>

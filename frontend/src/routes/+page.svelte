@@ -140,6 +140,11 @@ const libraries = [
   }
 ];
 
+
+function handleDarkModeChange(event) {
+    darkMode = event.detail.darkMode;
+  }
+
 // Funzione per estrarre il colore dal nome della biblioteca
 function getCorridorColor(libraryName) {
   if (libraryName.includes('Corridoio Verde')) {
@@ -162,14 +167,6 @@ function getCorridorColor(libraryName) {
     .filter(lib => lib.name.toLowerCase().includes(searchTerm.toLowerCase()))
     .filter(lib => selectedCategory === "all" || lib.categories.includes(selectedCategory));
 
-    // Toggle tema chiaro/scuro
-    function toggleDarkMode() {
-        darkMode = !darkMode;
-        document.body.classList.toggle('dark-mode', darkMode);
-        
-        // Invia l'evento al componente padre con il nuovo valore
-        dispatch('darkModeChange', { darkMode });
-    }
   
     // Gestione della selezione del piano
     function selectFloor(floorId) {
@@ -416,7 +413,7 @@ function interpolatePath(waypoints, stepsPerSegment) {
 <Header {darkMode} on:darkModeChange={handleDarkModeChange}/>
 
 <!-- Menu dei piani con header che occupa solo lo spazio necessario -->
-<header class="flex sticky shadow-lg top-0 z-10 -mt-4 justify-between items-center mb-6 primary-color p-4 rounded-b-lg 
+<header class="flex sticky shadow-lg top-0 z-10 -mt-4 justify-between items-center mb-6 primary-color p-4 rounded-lg 
   w-full sm:w-10/12 md:w-8/12 lg:w-6/12 xl:w-auto mx-auto"> <!-- Gestire la larghezza in tutti i dispositivi -->
   
   <!-- Contenitore per i pulsanti dei piani -->
@@ -449,23 +446,6 @@ function interpolatePath(waypoints, stepsPerSegment) {
       </button>
     {/each}
   </div>
-  
-  <!-- Pulsante dark mode separato con testo bianco fisso -->
-  <button 
-    class="p-2 rounded-full hover:bg-gray-700 transition-colors ml-4 text-white" 
-    on:click={toggleDarkMode}
-    aria-label="Cambia tema"
-  >
-    {#if darkMode}
-      <svg class="w-6 h-6" fill="white" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-        <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path>
-      </svg>
-    {:else}
-      <svg class="w-6 h-6" fill="white" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
-      </svg>
-    {/if}
-  </button>
 </header>
 
 
@@ -688,30 +668,7 @@ function interpolatePath(waypoints, stepsPerSegment) {
         {library.name}
       </div>
     {/if}
-    {/each}
-          
-
-      <!-- Controlli di zoom e navigazione -->
-      <div class="map-controls absolute bottom-4 right-4 flex flex-col">
-        <button class="p-2 map-control transition-colors">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-          </svg>
-        </button>
-        <button class="p-2 map-control transition-colors">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 12H6"></path>
-          </svg>
-        </button>
-        <div class="border-t border-gray-200 dark:border-gray-700"></div>
-        <button class="p-2 map-control transition-colors">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6">
-            </path>
-          </svg>
-        </button>
-      </div>                
+    {/each}               
     </div>
   </div>
 </main>
