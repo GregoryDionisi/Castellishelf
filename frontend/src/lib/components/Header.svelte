@@ -40,6 +40,7 @@
 
   <!-- Centro - Titolo -->
   <div class="flex-1 flex justify-center">
+    <a href="/">
     <h1 class="text-4xl font-medium castelli-title text-center">CastelliShelf</h1>
   </div>
 
