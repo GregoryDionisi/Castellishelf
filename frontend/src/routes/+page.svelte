@@ -43,102 +43,140 @@
   let selectedCategory = "all";
   
   // Categorie di libri disponibili
-  const categories = [
-    { id: "all", name: "Tutte le categorie" },
-    { id: "fiction", name: "Narrativa" },
-    { id: "science", name: "Scienze" },
-    { id: "history", name: "Storia" },
-    { id: "languages", name: "Lingue" },
-    { id: "tech", name: "Tecnologia" }
-  ];
+  const books = [
+  {
+    codiceLibro: 16884,
+    CDD: "035.1 ENC",
+    numeroInventario: 4042,
+    collocazione: "Biblioteca Corridoio Blu Piano Terra",
+    autore: "ENCICLOPEDIA ITALIANA",
+    titolo: "Enciclopedia italiana di scienze lettere ed arti - vol. XII - CROCE-DIR",
+    casaEditrice: "TRECCANI",
+    prestabile: "VERO",
+    categoria: ["Enciclopedia"]
+  },
+  {
+    codiceLibro: 14562,
+    CDD: "500 SCI",
+    numeroInventario: 3221,
+    collocazione: "Biblioteca Corridoio Verde Piano Terra",
+    autore: "Stephen Hawking",
+    titolo: "Dal Big Bang ai buchi neri",
+    casaEditrice: "BUR",
+    prestabile: "VERO",
+    categoria: ["Scienze"]
+  },
+  {
+    codiceLibro: 11230,
+    CDD: "800 ENG",
+    numeroInventario: 2101,
+    collocazione: "Biblioteca Corridoio Verde Primo Piano",
+    autore: "William Shakespeare",
+    titolo: "Romeo and Juliet",
+    casaEditrice: "Penguin Classics",
+    prestabile: "FALSO",
+    categoria: ["Lingue", "Narrativa"]
+  },
+  {
+    codiceLibro: 19203,
+    CDD: "900 HIS",
+    numeroInventario: 4760,
+    collocazione: "Biblioteca Corridoio Blu Primo Piano",
+    autore: "Alessandro Barbero",
+    titolo: "La battaglia. Storia di Waterloo",
+    casaEditrice: "Laterza",
+    prestabile: "VERO",
+    categoria: ["Storia"]
+  },
+  {
+    codiceLibro: 15670,
+    CDD: "600 TEC",
+    numeroInventario: 3098,
+    collocazione: "Biblioteca Corridoio Verde Secondo Piano",
+    autore: "James Dyson",
+    titolo: "Invention: A Life",
+    casaEditrice: "Simon & Schuster",
+    prestabile: "VERO",
+    categoria: ["Tecnologia"]
+  }
+];
+
   
 // Dati delle biblioteche con coordinate percentuali
 const libraries = [
-  { 
-    id: 1, 
-    name: 'Biblioteca Corridoio Verde Piano Terra', 
-    floor: 0, 
-    xPercent: 38, 
-    yPercent: 55, 
-    books: 250,
-    categories: ['science', 'tech'],
+  {
+    id: 1,
+    name: 'Biblioteca Corridoio Verde Piano Terra',
+    floor: 0,
+    xPercent: 38,
+    yPercent: 55,
+    books: ['Dal Big Bang ai buchi neri'],
     description: 'Collezione specializzata in testi scientifici, manuali tecnici e riviste del settore.',
-    openingHours: '8:30 - 16:30',
     favorites: 24
   },
-  { 
-    id: 2, 
-    name: 'Biblioteca Corridoio Blu Piano Terra', 
-    floor: 0, 
+  {
+    id: 2,
+    name: 'Biblioteca Corridoio Blu Piano Terra',
+    floor: 0,
     xPercent: 85,
     yPercent: 77,
-    books: 320,
-    categories: ['history', 'fiction'],
+    books: ['Enciclopedia italiana di scienze lettere ed arti - vol. XII - CROCE-DIR'],
     description: 'Ampia collezione di letteratura classica e contemporanea, saggi storici e filosofici.',
-    openingHours: '9:00 - 17:00',
     favorites: 42
   },
-  { 
-    id: 3, 
-    name: 'Biblioteca Corridoio Verde Primo Piano', 
-    floor: 1, 
-    xPercent: 38, 
+  {
+    id: 3,
+    name: 'Biblioteca Corridoio Verde Primo Piano',
+    floor: 1,
+    xPercent: 38,
     yPercent: 55,
-    books: 180,
-    categories: ['languages'],
+    books: ['Romeo and Juliet'],
     description: 'Testi in diverse lingue straniere, dizionari e materiale didattico per l\'apprendimento linguistico.',
-    openingHours: '9:00 - 16:00',
     favorites: 18
   },
-  { 
-    id: 4, 
-    name: 'Biblioteca Corridoio Blu Primo Piano', 
-    floor: 1, 
+  {
+    id: 4,
+    name: 'Biblioteca Corridoio Blu Primo Piano',
+    floor: 1,
     xPercent: 85,
     yPercent: 77,
-    books: 120,
-    categories: ['tech', 'fiction', 'languages'],
+    books: ['La battaglia. Storia di Waterloo'],
     description: 'Risorse multimediali, film, audiolibri e software didattici.',
-    openingHours: '10:00 - 18:00',
     favorites: 36
   },
-  { 
-    id: 5, 
-    name: 'Biblioteca Corridoio Arancione Primo Piano', 
-    floor: 1, 
+  {
+    id: 5,
+    name: 'Biblioteca Corridoio Arancione Primo Piano',
+    floor: 1,
     xPercent: 42,
     yPercent: 80,
-    books: 120,
-    categories: ['tech', 'fiction', 'languages'],
+    books: [],
     description: 'Risorse multimediali, film, audiolibri e software didattici.',
-    openingHours: '10:00 - 18:00',
     favorites: 36
   },
-  { 
-    id: 6, 
-    name: 'Biblioteca Corridoio Verde Secondo Piano', 
-    floor: 2, 
-    xPercent: 38, 
+  {
+    id: 6,
+    name: 'Biblioteca Corridoio Verde Secondo Piano',
+    floor: 2,
+    xPercent: 38,
     yPercent: 55,
-    books: 120,
-    categories: ['tech', 'fiction', 'languages'],
+    books: ['Invention: A Life'],
     description: 'Risorse multimediali, film, audiolibri e software didattici.',
-    openingHours: '10:00 - 18:00',
     favorites: 36
   },
-  { 
-    id: 7, 
-    name: 'Biblioteca Corridoio Blu Secondo Piano', 
-    floor: 2, 
+  {
+    id: 7,
+    name: 'Biblioteca Corridoio Blu Secondo Piano',
+    floor: 2,
     xPercent: 85,
     yPercent: 77,
-    books: 120,
-    categories: ['tech', 'fiction', 'languages'],
+    books: [],
     description: 'Risorse multimediali, film, audiolibri e software didattici.',
-    openingHours: '10:00 - 18:00',
     favorites: 36
   }
 ];
+
+
 
 
 function handleDarkModeChange(event) {
@@ -161,11 +199,40 @@ function getCorridorColor(libraryName) {
   // Lista dei preferiti dell'utente
   let userFavorites = [];
   
-  // Filtra le biblioteche per il piano corrente, termine di ricerca e categoria
-  $: visibleLibraries = libraries
+  // Variabile reattiva che produce un array nuovo con le categorie estratte per ogni libreria
+  $: librariesWithCategories = libraries.map(lib => {
+    // per ogni titolo di libro nella libreria, cerco il libro completo e prendo le categorie
+    const libCategories = lib.books
+      .map(title => {
+        const bookObj = books.find(b => b.titolo === title);
+        return bookObj ? bookObj.categoria : [];
+      })
+      .flat();
+
+    // estraggo solo categorie uniche
+    const uniqueCategories = [...new Set(libCategories)];
+
+    // restituisco una copia dell'oggetto libreria con solo la nuova proprietà categories calcolata
+    return { ...lib, categories: uniqueCategories };
+  });
+
+  // Estrai tutte le categorie uniche dai libri
+  $: allBookCategories = Array.from(
+    new Set(books.flatMap(book => book.categoria))
+  ).sort();
+
+  // Aggiungi "Tutte le categorie" all'inizio
+  $: categories = ["Tutte le categorie", ...allBookCategories];
+
+  // Filtra le biblioteche in base al piano, ricerca e categoria
+  $: visibleLibraries = librariesWithCategories
     .filter(lib => lib.floor === currentFloor)
     .filter(lib => lib.name.toLowerCase().includes(searchTerm.toLowerCase()))
-    .filter(lib => selectedCategory === "all" || lib.categories.includes(selectedCategory));
+    .filter(lib =>
+      selectedCategory === "all" || selectedCategory === "Tutte le categorie"
+        ? true
+        : lib.categories.includes(selectedCategory) // qui usi lib.categories, non lib.books
+    );
 
   
     // Gestione della selezione del piano
@@ -483,8 +550,9 @@ function interpolatePath(waypoints, stepsPerSegment) {
       bind:value={selectedCategory}
       class="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-700 shadow-sm focus:ring-2 focus:ring-primary focus:border-primary dark:focus:border-primary transition-colors dark:bg-gray-800 dark:text-white"
     >
-      {#each categories as category}
-        <option value={category.id}>{category.name}</option>
+      <option value="all">Tutte le categorie</option>
+      {#each allBookCategories as category}
+        <option value={category}>{category}</option>
       {/each}
     </select>
   </div>
@@ -509,25 +577,28 @@ function interpolatePath(waypoints, stepsPerSegment) {
           <div class="stats-grid grid grid-cols-2 gap-4 mb-4">
             <div class="stat-box p-3 rounded-lg">
               <span class="block text-sm opacity-70">Libri disponibili</span>
-              <span class="text-2xl font-semibold">{selectedLibrary.books}</span>
+              <span class="text-2xl font-semibold">{selectedLibrary.books.length}</span>
             </div>
+          
             <div class="stat-box p-3 rounded-lg">
-              <span class="block text-sm opacity-70">Orari</span>
-              <span class="text-lg">{selectedLibrary.openingHours}</span>
+              <span class="block text-sm opacity-70">Piano</span>
+              <span class="text-2xl font-semibold">{selectedLibrary.floor}</span>
             </div>
+          
             <div class="stat-box p-3 rounded-lg col-span-2">
               <span class="block text-sm opacity-70">Categorie</span>
               <div class="flex flex-wrap gap-2 mt-1">
                 {#each selectedLibrary.categories as categoryId}
-                  {#if categories.find(c => c.id === categoryId)}
+                  {#if categories.find(c => c === categoryId)}
                     <span class="category-tag px-2 py-1 text-xs rounded-full">
-                      {categories.find(c => c.id === categoryId).name}
+                      {categoryId}
                     </span>
                   {/if}
                 {/each}
               </div>
             </div>
           </div>
+          
           
           <p class="text-sm mb-4">{selectedLibrary.description}</p>
           
