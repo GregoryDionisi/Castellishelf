@@ -254,7 +254,7 @@
         <div class="card-body">
           <h2 class="card-title text-2xl mb-6 {darkMode ? 'text-white' : ''}">Gestione Libri</h2>
           <div class="overflow-x-auto">
-            <table class="table table-zebra w-full {darkMode ? 'text-white' : ''}">
+            <table class="table w-full {darkMode ? 'text-white' : ''}">
               <thead>
                 <tr class="{darkMode ? 'text-gray-300' : ''}">
                     <th>Codice</th>
