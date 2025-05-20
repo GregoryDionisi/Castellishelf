@@ -309,6 +309,7 @@
         </div>
       </div>
     </div>
+    <Footer />
   </div>
   
    <!-- Modal Aggiungi Libro -->
@@ -382,4 +383,3 @@
       </div>
     </div>
   {/if}
-  <Footer />
