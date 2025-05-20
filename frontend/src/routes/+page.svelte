@@ -1,6 +1,7 @@
 <script>
   import { onMount, tick } from 'svelte';
   import { fade, slide, fly } from 'svelte/transition';
+  import { darkMode } from '$lib/stores/darkModeStore';
   import pianoTerra from '$lib/images/piano-terra.jpg';
   import pianoPrimo from '$lib/images/piano-primo.jpg';
   import pianoSecondo from '$lib/images/piano-secondo.jpg';
@@ -25,9 +26,6 @@
     pianoPrimo,
     pianoSecondo
   ];
-  
-  // Tema chiaro/scuro
-  let darkMode = false;
   
   // Posizione del pallino che rappresenta l'utente
   const defaultUserPosition = { x: 33, y: 85 };
@@ -180,8 +178,8 @@ const libraries = [
 
 
 function handleDarkModeChange(event) {
-    darkMode = event.detail.darkMode;
-  }
+  darkMode.set(event.detail.darkMode);
+}
 
 // Funzione per estrarre il colore dal nome della biblioteca
 function getCorridorColor(libraryName) {
@@ -460,28 +458,23 @@ function interpolatePath(waypoints, stepsPerSegment) {
     event.target.onerror = null;
   }
   
-  // Carica preferiti da localStorage quando il componente è montato
   onMount(() => {
     const savedFavorites = localStorage.getItem('favorites');
     if (savedFavorites) {
       userFavorites = JSON.parse(savedFavorites);
     }
-    
-    // Controlla se l'utente preferisce il tema scuro
-    const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    if (prefersDarkMode) {
-      darkMode = true;
-      document.body.classList.add('dark-mode');
-    }
   });
 </script>
 
-<div class="app-container min-h-screen" class:dark-mode={darkMode}>
-<Header {darkMode} on:darkModeChange={handleDarkModeChange}/>
+<div class="app-container min-h-screen {$darkMode ? 'dark' : ''}">
+  <div class="min-h-screen {$darkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'}">
+    <Header {darkMode} on:darkModeChange={handleDarkModeChange}/>
 
-<!-- Menu dei piani con header che occupa solo lo spazio necessario -->
-<header class="flex sticky shadow-lg top-0 z-10 -mt-4 justify-between items-center mb-6 primary-color p-4 rounded-lg 
-  w-full sm:w-10/12 md:w-8/12 lg:w-6/12 xl:w-auto mx-auto"> <!-- Gestire la larghezza in tutti i dispositivi -->
+    <!-- Contenitore centrale per la barra dei piani -->
+    <div class="container mx-auto px-4">
+      <!-- Menu dei piani - versione corretta -->
+      <header class="flex sticky shadow-lg top-0 z-10 -mt-4 justify-center items-center mb-6 primary-color p-4 rounded-lg 
+           w-full max-w-3xl mx-auto">
   
   <!-- Contenitore per i pulsanti dei piani -->
   <div class="flex space-x-6">
@@ -523,7 +516,7 @@ function interpolatePath(waypoints, stepsPerSegment) {
 <main class="container mx-auto px-4 flex flex-col md:flex-row gap-6">
   <!-- Pannello informativo a sinistra -->
   <div class="w-full md:w-1/3 order-2 md:order-1">
-    <div class="info-panel rounded-lg p-4 shadow-lg h-full">
+            <div class="{$darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg p-4 shadow-lg h-full">
       <h2 class="text-xl font-bold mb-4 flex items-center">
         <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
           <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
@@ -559,8 +552,8 @@ function interpolatePath(waypoints, stepsPerSegment) {
 </div>
       
       {#if selectedLibrary && showDetailsPanel}
-        <div class="library-details rounded-lg p-5 mb-4" transition:slide>
-          <div class="flex justify-between items-start">
+      <div class="library-details rounded-lg p-5 mb-4 {$darkMode ? 'bg-gray-800' : 'bg-white shadow-md'}" transition:slide>
+        <div class="flex justify-between items-start">
             <h3 class="font-bold text-lg mb-3">{selectedLibrary.name}</h3>
             <button 
               class="favorite-btn p-1 rounded-full" 
@@ -575,17 +568,17 @@ function interpolatePath(waypoints, stepsPerSegment) {
           </div>
           
           <div class="stats-grid grid grid-cols-2 gap-4 mb-4">
-            <div class="stat-box p-3 rounded-lg">
+            <div class="stat-box p-3 rounded-lg {$darkMode ? 'bg-gray-700' : 'bg-gray-100'}">
               <span class="block text-sm opacity-70">Libri disponibili</span>
               <span class="text-2xl font-semibold">{selectedLibrary.books.length}</span>
             </div>
           
-            <div class="stat-box p-3 rounded-lg">
+            <div class="stat-box p-3 rounded-lg {$darkMode ? 'bg-gray-700' : 'bg-gray-100'}">
               <span class="block text-sm opacity-70">Piano</span>
               <span class="text-2xl font-semibold">{selectedLibrary.floor}</span>
             </div>
           
-            <div class="stat-box p-3 rounded-lg col-span-2">
+            <div class="stat-box p-3 rounded-lg {$darkMode ? 'bg-gray-700' : 'bg-gray-100'}">
               <span class="block text-sm opacity-70">Categorie</span>
               <div class="flex flex-wrap gap-2 mt-1">
                 {#each selectedLibrary.categories as categoryId}
@@ -609,14 +602,14 @@ function interpolatePath(waypoints, stepsPerSegment) {
               </svg>
               {selectedLibrary.favorites} preferiti
             </span>
-            <button class="primary-color px-4 py-2 rounded-lg text-white">
+            <a href={`/biblioteca/${selectedLibrary.id}`} class="primary-color px-4 py-2 rounded-lg text-white inline-block text-center">
               Visualizza catalogo
-            </button>
+            </a>
           </div>
         </div>
       {:else}
-        <div class="empty-state p-6 rounded-lg text-center" transition:fade>
-          <svg class="w-16 h-16 mx-auto mb-4 opacity-40" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+      <div class="empty-state p-6 rounded-lg text-center {$darkMode ? 'bg-gray-800' : 'bg-gray-100'}" transition:fade>
+        <svg class="w-16 h-16 mx-auto mb-4 opacity-40" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
             <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1zm-5 8.274l-.818 2.552c.25.112.526.174.818.174.292 0 .569-.062.818-.174L5 10.274zm10 0l-.818 2.552c.25.112.526.174.818.174.292 0 .569-.062.818-.174L15 10.274z" clip-rule="evenodd"></path>
           </svg>
           <p>Seleziona una biblioteca sulla mappa per visualizzare le informazioni dettagliate.</p>
@@ -633,8 +626,8 @@ function interpolatePath(waypoints, stepsPerSegment) {
             </h3>
             <ul class="space-y-2">
               {#each libraries.filter(lib => userFavorites.includes(lib.id)) as lib}
-                <li class="favorite-item p-3 rounded-lg flex justify-between items-center" 
-                    on:click={() => {
+              <li class="favorite-item p-3 rounded-lg flex justify-between items-center {$darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'}" 
+              on:click={() => {
                       if (lib.floor !== currentFloor) {
                         selectFloor(lib.floor);
                         setTimeout(() => handleLibraryClick(lib), 100);
@@ -732,8 +725,8 @@ function interpolatePath(waypoints, stepsPerSegment) {
     <!-- Tooltip per il nome della biblioteca quando si passa sopra -->
     {#if selectedLibrary && selectedLibrary.id === library.id}
       <div 
-        class="tooltip absolute px-3 py-2 rounded-lg shadow-lg text-sm font-medium"
-        style="left: {library.xPercent}%; top: calc({library.yPercent}% - 40px); z-index: 20;" 
+      class="tooltip absolute px-3 py-2 rounded-lg shadow-lg text-sm font-medium {$darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'}"
+      style="left: {library.xPercent}%; top: calc({library.yPercent}% - 40px); z-index: 20;" 
         transition:fade={{duration: 200}}
       >
         {library.name}
@@ -744,5 +737,7 @@ function interpolatePath(waypoints, stepsPerSegment) {
   </div>
 </main>
 <Statistics {libraries}/>
+</div>
 <Footer />
+</div>
 </div>
