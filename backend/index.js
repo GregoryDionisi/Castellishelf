@@ -31,48 +31,43 @@ const startServer = async() => { //avvio server, in ascolto sulla porta 3000, de
 
 startServer(); //richiamo funzione avvio del server
 
-//funzione per visualizzare il libro richiesto tramite ISBN : rotta --> GET /libri/:codice_libro
-
-app.get('/libri/:Codice_libro', async (req, res) => {
-
-    if (!database) {
-        return res.status(500).json({message : 'Database not connected'})
-    } 
-
-    const codiceLibroDaTrovare = parseInt(req.params.Codice_libro, 10);
-
+app.get('/libraries', async (req, res) => {
+  if (!database) {
+    return res.status(500).json({ message: 'Database is not connected' });
+  }
   try {
-    const libro = await database.collection('libri').findOne({ Codice_libro: codiceLibroDaTrovare });
+    const rawLibraries = await database.collection('biblioteche').find({}).toArray();
+    
+    const libraries = rawLibraries.map(lib => ({
+      library_id: lib._id,
+      library_name: lib.Nome,
+      floor: lib.Floor,
+      x_percent: lib.xPercent,
+      y_percent: lib.yPercent,
+      books: lib.Libri
+    }));
 
-    if (!libro) {
-      return res.status(404).json({ message: 'Libro non trovato' });
-    }
-
-    res.json(libro);
-
-  } catch (error) {
-    console.error('Errore nel recupero del libro:', error);
-    res.status(500).json({ message: 'Errore del server' });
+    res.json({ data: libraries }); // frontend si aspetta .data
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: 'Error get libraries' });
   }
 });
 
 
-
-app.get('/libri', async (req, res) => {
-
-  if (!database) {
-      return res.status(500).json({message : 'Database not connected'})
-  } 
-
-try {
-  const libri = await database.collection('libri').find().toArray();
-  res.json(libri);
-
-} catch (error) {
-  console.error('Errore nel recupero del libro:', error);
-  res.status(500).json({ message: 'Errore del server' });
-}
-});
+// get all data
+app.get('/books', async (req, res) => { 
+  if (!database){
+      return res.status(500).json({message: 'Database is not connected'});
+  }
+  try{
+      const result = await database.collection('libri').find({}).toArray();
+      res.json(result);
+  }catch(err){
+      console.log(err);
+      res.status(500).json({message: 'Error get books'});
+  }
+})
 
 
 

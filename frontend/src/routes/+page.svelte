@@ -1,6 +1,5 @@
 <script>
-  import { onMount, tick } from 'svelte';
-  import { fade, slide, fly } from 'svelte/transition';
+  import { onMount } from 'svelte';
   import { darkMode } from '$lib/stores/darkModeStore';
   import pianoTerra from '$lib/images/piano-terra.jpg';
   import pianoPrimo from '$lib/images/piano-primo.jpg';
@@ -11,7 +10,7 @@
   import Footer from '$lib/components/Footer.svelte';
   import Statistics from '$lib/components/Statistics.svelte';
   import Header from '$lib/components/Header.svelte';
-  
+
   // Stato per gestire il piano attualmente selezionato
   let currentFloor = 0;
   const floors = [
@@ -19,173 +18,118 @@
     { id: 1, name: 'Primo Piano', icon: 'arrow-up-1' },
     { id: 2, name: 'Piano Secondo', icon: 'arrow-up-2' }
   ];
-  
+
   // Percorsi delle immagini per i diversi piani
   const floorImages = [
     pianoTerra,
     pianoPrimo,
     pianoSecondo
   ];
-  
+
   // Posizione del pallino che rappresenta l'utente
   const defaultUserPosition = { x: 33, y: 85 };
   let userPositionPercent = { ...defaultUserPosition };
-  
+
   // Stato per l'animazione
   let isAnimating = false;
   let selectedLibrary = null;
   let showDetailsPanel = false;
-  
+
   // Termini di ricerca e filtri
   let searchTerm = "";
   let selectedCategory = "all";
-  
-  // Categorie di libri disponibili
-  const books = [
-  {
-    codiceLibro: 16884,
-    CDD: "035.1 ENC",
-    numeroInventario: 4042,
-    collocazione: "Biblioteca Corridoio Blu Piano Terra",
-    autore: "ENCICLOPEDIA ITALIANA",
-    titolo: "Enciclopedia italiana di scienze lettere ed arti - vol. XII - CROCE-DIR",
-    casaEditrice: "TRECCANI",
-    prestabile: "VERO",
-    categoria: ["Enciclopedia"]
-  },
-  {
-    codiceLibro: 14562,
-    CDD: "500 SCI",
-    numeroInventario: 3221,
-    collocazione: "Biblioteca Corridoio Verde Piano Terra",
-    autore: "Stephen Hawking",
-    titolo: "Dal Big Bang ai buchi neri",
-    casaEditrice: "BUR",
-    prestabile: "VERO",
-    categoria: ["Scienze"]
-  },
-  {
-    codiceLibro: 11230,
-    CDD: "800 ENG",
-    numeroInventario: 2101,
-    collocazione: "Biblioteca Corridoio Verde Primo Piano",
-    autore: "William Shakespeare",
-    titolo: "Romeo and Juliet",
-    casaEditrice: "Penguin Classics",
-    prestabile: "FALSO",
-    categoria: ["Lingue", "Narrativa"]
-  },
-  {
-    codiceLibro: 19203,
-    CDD: "900 HIS",
-    numeroInventario: 4760,
-    collocazione: "Biblioteca Corridoio Blu Primo Piano",
-    autore: "Alessandro Barbero",
-    titolo: "La battaglia. Storia di Waterloo",
-    casaEditrice: "Laterza",
-    prestabile: "VERO",
-    categoria: ["Storia"]
-  },
-  {
-    codiceLibro: 15670,
-    CDD: "600 TEC",
-    numeroInventario: 3098,
-    collocazione: "Biblioteca Corridoio Verde Secondo Piano",
-    autore: "James Dyson",
-    titolo: "Invention: A Life",
-    casaEditrice: "Simon & Schuster",
-    prestabile: "VERO",
-    categoria: ["Tecnologia"]
-  }
-];
 
-  
-// Dati delle biblioteche con coordinate percentuali
-const libraries = [
-  {
-    id: 1,
-    name: 'Biblioteca Corridoio Verde Piano Terra',
-    floor: 0,
-    xPercent: 38,
-    yPercent: 55,
-    books: ['Dal Big Bang ai buchi neri']
-  },
-  {
-    id: 2,
-    name: 'Biblioteca Corridoio Blu Piano Terra',
-    floor: 0,
-    xPercent: 85,
-    yPercent: 77,
-    books: ['Enciclopedia italiana di scienze lettere ed arti - vol. XII - CROCE-DIR']
-  },
-  {
-    id: 3,
-    name: 'Biblioteca Corridoio Verde Primo Piano',
-    floor: 1,
-    xPercent: 38,
-    yPercent: 55,
-    books: ['Romeo and Juliet']
-  },
-  {
-    id: 4,
-    name: 'Biblioteca Corridoio Blu Primo Piano',
-    floor: 1,
-    xPercent: 85,
-    yPercent: 77,
-    books: ['La battaglia. Storia di Waterloo']
-  },
-  {
-    id: 5,
-    name: 'Biblioteca Corridoio Arancione Primo Piano',
-    floor: 1,
-    xPercent: 42,
-    yPercent: 80,
-    books: []
-  },
-  {
-    id: 6,
-    name: 'Biblioteca Corridoio Verde Secondo Piano',
-    floor: 2,
-    xPercent: 38,
-    yPercent: 55,
-    books: ['Invention: A Life']
-  },
-  {
-    id: 7,
-    name: 'Biblioteca Corridoio Blu Secondo Piano',
-    floor: 2,
-    xPercent: 85,
-    yPercent: 77,
-    books: []
-  }
-];
+  let libraries = [];
+  let books = [];
+  let loading = false;
+  let error = null;
+  const API_URL = 'http://localhost:3001';
 
+  // Funzione per recuperare i libri dal backend
+  async function fetchBooks() {
+  loading = true;
+  error = null;
 
+  try {
+    const response = await fetch(`${API_URL}/books`);
 
+    if (!response.ok) {
+      throw new Error(`Errore HTTP: ${response.status}`);
+    }
 
-function handleDarkModeChange(event) {
-  darkMode.set(event.detail.darkMode);
-}
-
-// Funzione per estrarre il colore dal nome della biblioteca
-function getCorridorColor(libraryName) {
-  if (libraryName.includes('Corridoio Verde')) {
-    return 'green';
-  } else if (libraryName.includes('Corridoio Blu')) {
-    return 'blue';
-  } else if (libraryName.includes('Corridoio Arancione')) {
-    return 'orange';
-  } else {
-    return 'default'; // Colore di default se non viene rilevato nessun corridoio
+    const result = await response.json();
+    books = result.map(book => ({
+      codiceLibro: book["Codice libro"],
+      CDD: book.CDD,
+      numeroInventario: book["Numero inventario"],
+      collocazione: book.Collocazione,
+      autore: book.Autore,
+      titolo: book.Titolo,
+      casaEditrice: book["Casa editrice"],
+      prestabile: book.Prestabile,
+      categoria: Array.isArray(book.Categoria) ? book.Categoria : [book.Categoria]
+    }));
+  } catch (e) {
+    error = `Errore nel caricamento dei libri: ${e.message}`;
+    console.error(error);
+  } finally {
+    loading = false;
   }
 }
-  
+
+
+async function fetchLibraries() {
+  loading = true;
+  error = null;
+
+  try {
+    const response = await fetch(`${API_URL}/libraries`);
+
+    if (!response.ok) {
+      throw new Error(`Errore HTTP: ${response.status}`);
+    }
+
+    const result = await response.json();
+    libraries = result.data.map(lib => ({
+      id: lib.library_id,
+      name: lib.library_name,
+      floor: lib.floor,
+      xPercent: lib.x_percent,
+      yPercent: lib.y_percent,
+      books: lib.books // array di titoli
+    }));
+  } catch (e) {
+    error = `Errore nel caricamento delle biblioteche: ${e.message}`;
+    console.error(error);
+  } finally {
+    loading = false;
+  }
+}
+
+
+
+  function handleDarkModeChange(event) {
+    darkMode.set(event.detail.darkMode);
+  }
+
+  // Funzione per estrarre il colore dal nome della biblioteca
+  function getCorridorColor(libraryName) {
+    if (libraryName.includes('Corridoio Verde')) {
+      return 'green';
+    } else if (libraryName.includes('Corridoio Blu')) {
+      return 'blue';
+    } else if (libraryName.includes('Corridoio Arancione')) {
+      return 'orange';
+    } else {
+      return 'default'; // Colore di default se non viene rilevato nessun corridoio
+    }
+  }
+
   // Lista dei preferiti dell'utente
   let userFavorites = [];
-  
+
   // Variabile reattiva che produce un array nuovo con le categorie estratte per ogni libreria
   $: librariesWithCategories = libraries.map(lib => {
-    // per ogni titolo di libro nella libreria, cerco il libro completo e prendo le categorie
     const libCategories = lib.books
       .map(title => {
         const bookObj = books.find(b => b.titolo === title);
@@ -193,10 +137,8 @@ function getCorridorColor(libraryName) {
       })
       .flat();
 
-    // estraggo solo categorie uniche
     const uniqueCategories = [...new Set(libCategories)];
 
-    // restituisco una copia dell'oggetto libreria con solo la nuova proprietà categories calcolata
     return { ...lib, categories: uniqueCategories };
   });
 
@@ -215,12 +157,11 @@ function getCorridorColor(libraryName) {
     .filter(lib =>
       selectedCategory === "all" || selectedCategory === "Tutte le categorie"
         ? true
-        : lib.categories.includes(selectedCategory) // qui usi lib.categories, non lib.books
+        : lib.categories.includes(selectedCategory)
     );
 
-  
-    // Gestione della selezione del piano
-    function selectFloor(floorId) {
+      // Gestione della selezione del piano
+      function selectFloor(floorId) {
     currentFloor = floorId;
     // Resetta la posizione del pallino a quella di default
     userPositionPercent = { ...defaultUserPosition };
@@ -260,16 +201,25 @@ async function handleLibraryClick(library) {
     userPositionPercent, 
     { x: library.xPercent, y: library.yPercent },
     library.id,
-    previousLibraryId  // Aggiungiamo l'ID della biblioteca precedente
+    previousLibraryId
   );
   
-  // Animiamo il movimento lungo il percorso
-  for (const point of path) {
-    userPositionPercent = point;
-    await new Promise(resolve => setTimeout(resolve, 30));
+  // Animiamo il movimento lungo il percorso usando un metodo più robusto
+  try {
+    for (let i = 0; i < path.length; i++) {
+      userPositionPercent = { ...path[i] }; // Creiamo un nuovo oggetto per garantire la reattività
+      await new Promise(resolve => setTimeout(resolve, 30));
+    }
+    
+    // Assicuriamoci che alla fine il pallino sia esattamente alla destinazione
+    userPositionPercent = { x: library.xPercent, y: library.yPercent };
+  } catch (error) {
+    console.error("Errore durante l'animazione:", error);
+    // In caso di errore, posiziona comunque il pallino alla destinazione
+    userPositionPercent = { x: library.xPercent, y: library.yPercent };
   }
   
-  // Attendiamo un momento prima di completare l'animazione
+  // Completiamo l'animazione dopo un breve ritardo
   setTimeout(() => {
     isAnimating = false;
   }, 300);
@@ -298,7 +248,6 @@ function generatePath(start, end, libraryId, previousLibraryId) {
       { x: 38, y: 55 }     // Aggiustamento finale e arrivo
     ],
     
- 
     "5-3": [
       { x: 42, y: 80 },    // Punto partenza (supposto per Corridoio Arancione)
       { x: 36, y: 80 },    // Leggermente in basso
@@ -306,7 +255,6 @@ function generatePath(start, end, libraryId, previousLibraryId) {
       { x: 38, y: 55 }
     ],
     
-
     "3-5": [
       { x: 38, y: 55 },    // Punto partenza al secondo piano
       { x: 36, y: 55 },    // Movimento verso le scale
@@ -314,7 +262,6 @@ function generatePath(start, end, libraryId, previousLibraryId) {
       { x: 42, y: 80 }
     ],
     
-
     "5-4": [
       { x: 42, y: 80 },    // Punto partenza (supposto per Corridoio Arancione)
       { x: 42, y: 78 },    // Leggermente in basso
@@ -322,7 +269,6 @@ function generatePath(start, end, libraryId, previousLibraryId) {
       { x: 85, y: 77 }
     ],
     
-
     "4-5": [
       { x: 85, y: 77 },    // Punto partenza al secondo piano
       { x: 85, y: 78 },    // Movimento verso le scale
@@ -333,7 +279,6 @@ function generatePath(start, end, libraryId, previousLibraryId) {
   
   // Mappa delle coppie che utilizzano percorsi standard
   const routePatterns = {
-
     "leftToRight": ["1-2", "3-4", "6-7"],
     "rightToLeft": ["2-1", "4-3", "7-6"],
     "5-3": ["5-3"],
@@ -354,72 +299,98 @@ function generatePath(start, end, libraryId, previousLibraryId) {
     }
   }
   
-  // Percorsi personalizzati per singola biblioteca
+  // Percorsi personalizzati per singola biblioteca dal punto di ingresso di default
   const customPaths = {
     1: [ // Biblioteca Corridoio Verde Piano Terra
-      { x: start.x, y: start.y }, 
-      { x: start.x + 3, y: start.y }, 
-      { x: start.x + 3, y: end.y }, 
+      { x: defaultUserPosition.x, y: defaultUserPosition.y }, 
+      { x: defaultUserPosition.x + 3, y: defaultUserPosition.y }, 
+      { x: defaultUserPosition.x + 3, y: end.y }, 
       { x: end.x, y: end.y } 
     ],
     2: [ // Biblioteca Corridoio Blu Piano Terra
-      { x: start.x, y: start.y },
-      { x: start.x + 3, y: start.y },
-      { x: start.x + 3, y: start.y - 6 },
-      { x: end.x, y: start.y - 6 },
+      { x: defaultUserPosition.x, y: defaultUserPosition.y },
+      { x: defaultUserPosition.x + 3, y: defaultUserPosition.y },
+      { x: defaultUserPosition.x + 3, y: defaultUserPosition.y - 6 },
+      { x: end.x, y: defaultUserPosition.y - 6 },
       { x: end.x, y: end.y } 
     ],
     3: [ // Biblioteca Corridoio Verde Primo Piano
-      { x: start.x, y: start.y }, 
-      { x: start.x + 3, y: start.y },
-      { x: start.x + 3, y: end.y }, 
+      { x: defaultUserPosition.x, y: defaultUserPosition.y }, 
+      { x: defaultUserPosition.x + 3, y: defaultUserPosition.y },
+      { x: defaultUserPosition.x + 3, y: end.y }, 
       { x: end.x, y: end.y } 
     ],
     4: [ // Biblioteca Corridoio Blu Primo Piano
-      { x: start.x, y: start.y },
-      { x: start.x + 3, y: start.y },
-      { x: start.x + 3, y: start.y - 6 },
-      { x: end.x, y: start.y - 6 },
+      { x: defaultUserPosition.x, y: defaultUserPosition.y },
+      { x: defaultUserPosition.x + 3, y: defaultUserPosition.y },
+      { x: defaultUserPosition.x + 3, y: defaultUserPosition.y - 6 },
+      { x: end.x, y: defaultUserPosition.y - 6 },
       { x: end.x, y: end.y } 
     ],
     5: [ // Biblioteca Corridoio Arancione Primo Piano
-      { x: start.x, y: start.y },        
-      { x: start.x + 3, y: start.y },         
-      { x: start.x + 3, y: end.y },   
+      { x: defaultUserPosition.x, y: defaultUserPosition.y },        
+      { x: defaultUserPosition.x + 3, y: defaultUserPosition.y },         
+      { x: defaultUserPosition.x + 3, y: end.y },   
       { x: end.x, y: end.y }
     ],
     6: [ // Biblioteca Corridoio Verde Secondo Piano
-      { x: start.x, y: start.y },
-      { x: start.x + 3, y: start.y }, 
-      { x: start.x + 3, y: end.y }, 
+      { x: defaultUserPosition.x, y: defaultUserPosition.y },
+      { x: defaultUserPosition.x + 3, y: defaultUserPosition.y }, 
+      { x: defaultUserPosition.x + 3, y: end.y }, 
       { x: end.x, y: end.y } 
     ],
     7: [ // Biblioteca Corridoio Blu Secondo Piano
-      { x: start.x, y: start.y },
-      { x: start.x + 3, y: start.y }, 
-      { x: start.x + 3, y: start.y - 6 }, 
-      { x: end.x, y: start.y - 6 }, 
+      { x: defaultUserPosition.x, y: defaultUserPosition.y },
+      { x: defaultUserPosition.x + 3, y: defaultUserPosition.y }, 
+      { x: defaultUserPosition.x + 3, y: defaultUserPosition.y - 6 }, 
+      { x: end.x, y: defaultUserPosition.y - 6 }, 
       { x: end.x, y: end.y } 
     ]
   };
   
-  // Se esiste un percorso standard per questa biblioteca
-  if (customPaths[libraryId]) {
+  // Se richiesto percorso dalla posizione di partenza predefinita
+  if (!previousLibraryId && customPaths[libraryId]) {
     return interpolatePath(customPaths[libraryId], steps);
   }
+  
+  // Per percorsi personalizzati da posizione attuale (non di default)
+  if (previousLibraryId === null) {
+    // Crea un percorso semplice dalla posizione attuale
+    const simplePath = [
+      { x: start.x, y: start.y },
+      { x: (start.x + end.x) / 2, y: start.y },
+      { x: (start.x + end.x) / 2, y: end.y },
+      { x: end.x, y: end.y }
+    ];
+    return interpolatePath(simplePath, steps);
+  }
 
-  // Fallback vuoto (nessun movimento)
-  return [end];
+  // Fallback: percorso semplice dalla posizione corrente alla destinazione
+  return interpolatePath([
+    { x: start.x, y: start.y },
+    { x: end.x, y: end.y }
+  ], steps * 2); // Usiamo più passi per un movimento più fluido
 }
 
-// Funzione di interpolazione del percorso
+// Funzione di interpolazione del percorso migliorata
 function interpolatePath(waypoints, stepsPerSegment) {
+  if (!waypoints || waypoints.length < 2) {
+    console.error("Waypoints non validi per l'interpolazione", waypoints);
+    return [];
+  }
+  
   const result = [];
   
   // Per ogni segmento tra due waypoints
   for (let i = 0; i < waypoints.length - 1; i++) {
     const start = waypoints[i];
     const end = waypoints[i + 1];
+    
+    if (!start || !end || typeof start.x !== 'number' || typeof start.y !== 'number' || 
+        typeof end.x !== 'number' || typeof end.y !== 'number') {
+      console.error("Coordinate non valide nel waypoint", { start, end });
+      continue; // Salta questo segmento
+    }
     
     // Crea steps punti interpolati tra start e end
     for (let step = 0; step <= stepsPerSegment; step++) {
@@ -444,12 +415,19 @@ function interpolatePath(waypoints, stepsPerSegment) {
     event.target.onerror = null;
   }
   
+  
   onMount(() => {
-    const savedFavorites = localStorage.getItem('favorites');
-    if (savedFavorites) {
-      userFavorites = JSON.parse(savedFavorites);
+    fetchLibraries();
+    fetchBooks();
+
+    // Recupera i preferiti da localStorage, se esistono
+    const storedFavorites = localStorage.getItem('favorites');
+    if (storedFavorites) {
+      userFavorites = JSON.parse(storedFavorites);
     }
   });
+
+
 </script>
 
 <div class="app-container min-h-screen {$darkMode ? 'dark' : ''}">
