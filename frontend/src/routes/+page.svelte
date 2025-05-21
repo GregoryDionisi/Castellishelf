@@ -108,9 +108,7 @@ const libraries = [
     floor: 0,
     xPercent: 38,
     yPercent: 55,
-    books: ['Dal Big Bang ai buchi neri'],
-    description: 'Collezione specializzata in testi scientifici, manuali tecnici e riviste del settore.',
-    favorites: 24
+    books: ['Dal Big Bang ai buchi neri']
   },
   {
     id: 2,
@@ -118,9 +116,7 @@ const libraries = [
     floor: 0,
     xPercent: 85,
     yPercent: 77,
-    books: ['Enciclopedia italiana di scienze lettere ed arti - vol. XII - CROCE-DIR'],
-    description: 'Ampia collezione di letteratura classica e contemporanea, saggi storici e filosofici.',
-    favorites: 42
+    books: ['Enciclopedia italiana di scienze lettere ed arti - vol. XII - CROCE-DIR']
   },
   {
     id: 3,
@@ -128,9 +124,7 @@ const libraries = [
     floor: 1,
     xPercent: 38,
     yPercent: 55,
-    books: ['Romeo and Juliet'],
-    description: 'Testi in diverse lingue straniere, dizionari e materiale didattico per l\'apprendimento linguistico.',
-    favorites: 18
+    books: ['Romeo and Juliet']
   },
   {
     id: 4,
@@ -138,9 +132,7 @@ const libraries = [
     floor: 1,
     xPercent: 85,
     yPercent: 77,
-    books: ['La battaglia. Storia di Waterloo'],
-    description: 'Risorse multimediali, film, audiolibri e software didattici.',
-    favorites: 36
+    books: ['La battaglia. Storia di Waterloo']
   },
   {
     id: 5,
@@ -148,9 +140,7 @@ const libraries = [
     floor: 1,
     xPercent: 42,
     yPercent: 80,
-    books: [],
-    description: 'Risorse multimediali, film, audiolibri e software didattici.',
-    favorites: 36
+    books: []
   },
   {
     id: 6,
@@ -158,9 +148,7 @@ const libraries = [
     floor: 2,
     xPercent: 38,
     yPercent: 55,
-    books: ['Invention: A Life'],
-    description: 'Risorse multimediali, film, audiolibri e software didattici.',
-    favorites: 36
+    books: ['Invention: A Life']
   },
   {
     id: 7,
@@ -168,9 +156,7 @@ const libraries = [
     floor: 2,
     xPercent: 85,
     yPercent: 77,
-    books: [],
-    description: 'Risorse multimediali, film, audiolibri e software didattici.',
-    favorites: 36
+    books: []
   }
 ];
 
@@ -596,12 +582,6 @@ function interpolatePath(waypoints, stepsPerSegment) {
           <p class="text-sm mb-4">{selectedLibrary.description}</p>
           
           <div class="flex justify-between mt-4">
-            <span class="flex items-center text-sm">
-              <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
-              </svg>
-              {selectedLibrary.favorites} preferiti
-            </span>
             <a href={`/biblioteca/${selectedLibrary.id}`} class="primary-color px-4 py-2 rounded-lg text-white inline-block text-center">
               Visualizza catalogo
             </a>
