@@ -1,5 +1,4 @@
 <script>
-  import { onMount } from 'svelte';
   import { darkMode } from '$lib/stores/darkModeStore';
   import pianoTerra from '$lib/images/piano-terra.jpg';
   import pianoPrimo from '$lib/images/piano-primo.jpg';
@@ -12,7 +11,7 @@
   import Header from '$lib/components/Header.svelte';
 
   // Stato per gestire il piano attualmente selezionato
-  let currentFloor = 0;
+  let currentFloor = $state(0);
   const floors = [
     { id: 0, name: 'Piano Terra', icon: 'home' },
     { id: 1, name: 'Primo Piano', icon: 'arrow-up-1' },
@@ -28,85 +27,85 @@
 
   // Posizione del pallino che rappresenta l'utente
   const defaultUserPosition = { x: 33, y: 85 };
-  let userPositionPercent = { ...defaultUserPosition };
+  let userPositionPercent = $state({ ...defaultUserPosition });
 
-  // Stato per l'animazione
-  let isAnimating = false;
-  let selectedLibrary = null;
-  let showDetailsPanel = false;
+  // Stato per l'animazione - SEMPLIFICATO
+  let isAnimating = $state(false);
+  let selectedLibrary = $state(null);
+  let showDetailsPanel = $state(false);
 
   // Termini di ricerca e filtri
-  let searchTerm = "";
-  let selectedCategory = "all";
+  let searchTerm = $state("");
+  let selectedCategory = $state("all");
 
-  let libraries = [];
-  let books = [];
-  let loading = false;
-  let error = null;
+  let libraries = $state([]);
+  let books = $state([]);
+  let loading = $state(false);
+  let error = $state(null);
   const API_URL = 'http://localhost:3001';
+
+  // Lista dei preferiti dell'utente
+  let userFavorites = $state([]);
 
   // Funzione per recuperare i libri dal backend
   async function fetchBooks() {
-  loading = true;
-  error = null;
+    loading = true;
+    error = null;
 
-  try {
-    const response = await fetch(`${API_URL}/books`);
+    try {
+      const response = await fetch(`${API_URL}/books`);
 
-    if (!response.ok) {
-      throw new Error(`Errore HTTP: ${response.status}`);
+      if (!response.ok) {
+        throw new Error(`Errore HTTP: ${response.status}`);
+      }
+
+      const result = await response.json();
+      books = result.map(book => ({
+        codiceLibro: book["Codice libro"],
+        CDD: book.CDD,
+        numeroInventario: book["Numero inventario"],
+        collocazione: book.Collocazione,
+        autore: book.Autore,
+        titolo: book.Titolo,
+        casaEditrice: book["Casa editrice"],
+        prestabile: book.Prestabile,
+        categoria: Array.isArray(book.Categoria) ? book.Categoria : [book.Categoria]
+      }));
+    } catch (e) {
+      error = `Errore nel caricamento dei libri: ${e.message}`;
+      console.error(error);
+    } finally {
+      loading = false;
     }
-
-    const result = await response.json();
-    books = result.map(book => ({
-      codiceLibro: book["Codice libro"],
-      CDD: book.CDD,
-      numeroInventario: book["Numero inventario"],
-      collocazione: book.Collocazione,
-      autore: book.Autore,
-      titolo: book.Titolo,
-      casaEditrice: book["Casa editrice"],
-      prestabile: book.Prestabile,
-      categoria: Array.isArray(book.Categoria) ? book.Categoria : [book.Categoria]
-    }));
-  } catch (e) {
-    error = `Errore nel caricamento dei libri: ${e.message}`;
-    console.error(error);
-  } finally {
-    loading = false;
   }
-}
 
+  async function fetchLibraries() {
+    loading = true;
+    error = null;
 
-async function fetchLibraries() {
-  loading = true;
-  error = null;
+    try {
+      const response = await fetch(`${API_URL}/libraries`);
 
-  try {
-    const response = await fetch(`${API_URL}/libraries`);
+      if (!response.ok) {
+        throw new Error(`Errore HTTP: ${response.status}`);
+      }
 
-    if (!response.ok) {
-      throw new Error(`Errore HTTP: ${response.status}`);
+      const result = await response.json();
+      libraries = result.data.map(lib => ({
+        id: lib.library_id,
+        name: lib.library_name,
+        floor: lib.floor,
+        xPercent: lib.x_percent,
+        yPercent: lib.y_percent,
+        books: lib.books // array di titoli
+      }));
+    } catch (e) {
+      error = `Errore nel caricamento delle biblioteche: ${e.message}`;
+      console.error(error);
+    } finally {
+      loading = false;
     }
-
-    const result = await response.json();
-    libraries = result.data.map(lib => ({
-      id: lib.library_id,
-      name: lib.library_name,
-      floor: lib.floor,
-      xPercent: lib.x_percent,
-      yPercent: lib.y_percent,
-      books: lib.books // array di titoli
-    }));
-  } catch (e) {
-    error = `Errore nel caricamento delle biblioteche: ${e.message}`;
-    console.error(error);
-  } finally {
-    loading = false;
   }
-}
-
-
 
   function handleDarkModeChange(event) {
     darkMode.set(event.detail.darkMode);
@@ -125,11 +124,8 @@ async function fetchLibraries() {
     }
   }
 
-  // Lista dei preferiti dell'utente
-  let userFavorites = [];
-
   // Variabile reattiva che produce un array nuovo con le categorie estratte per ogni libreria
-  $: librariesWithCategories = libraries.map(lib => {
+  const librariesWithCategories = $derived(libraries.map(lib => {
     const libCategories = lib.books
       .map(title => {
         const bookObj = books.find(b => b.titolo === title);
@@ -140,28 +136,28 @@ async function fetchLibraries() {
     const uniqueCategories = [...new Set(libCategories)];
 
     return { ...lib, categories: uniqueCategories };
-  });
+  }));
 
   // Estrai tutte le categorie uniche dai libri
-  $: allBookCategories = Array.from(
+  const allBookCategories = $derived(Array.from(
     new Set(books.flatMap(book => book.categoria))
-  ).sort();
+  ).sort());
 
   // Aggiungi "Tutte le categorie" all'inizio
-  $: categories = ["Tutte le categorie", ...allBookCategories];
+  const categories = $derived(["Tutte le categorie", ...allBookCategories]);
 
   // Filtra le biblioteche in base al piano, ricerca e categoria
-  $: visibleLibraries = librariesWithCategories
+  const visibleLibraries = $derived(librariesWithCategories
     .filter(lib => lib.floor === currentFloor)
     .filter(lib => lib.name.toLowerCase().includes(searchTerm.toLowerCase()))
     .filter(lib =>
       selectedCategory === "all" || selectedCategory === "Tutte le categorie"
         ? true
         : lib.categories.includes(selectedCategory)
-    );
+    ));
 
-      // Gestione della selezione del piano
-      function selectFloor(floorId) {
+  // Gestione della selezione del piano
+  function selectFloor(floorId) {
     currentFloor = floorId;
     // Resetta la posizione del pallino a quella di default
     userPositionPercent = { ...defaultUserPosition };
@@ -177,257 +173,235 @@ async function fetchLibraries() {
       userFavorites = [...userFavorites, libraryId];
     }
     // Salva preferiti in localStorage
-    localStorage.setItem('favorites', JSON.stringify(userFavorites));
-  }
-  
-// Gestore per il click su una biblioteca
-async function handleLibraryClick(library) {
-  if (isAnimating) return;
-  
-  if (selectedLibrary && selectedLibrary.id === library.id) {
-    showDetailsPanel = !showDetailsPanel;
-    return;
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('favorites', JSON.stringify(userFavorites));
+    }
   }
 
-  // Memorizza la biblioteca precedente
-  const previousLibraryId = selectedLibrary ? selectedLibrary.id : null;
-  
-  selectedLibrary = library;
-  isAnimating = true;
-  showDetailsPanel = true;
-  
-  // Generiamo un percorso personalizzato per l'animazione
-  const path = generatePath(
-    userPositionPercent, 
-    { x: library.xPercent, y: library.yPercent },
-    library.id,
-    previousLibraryId
-  );
-  
-  // Animiamo il movimento lungo il percorso usando un metodo più robusto
-  try {
-    for (let i = 0; i < path.length; i++) {
-      userPositionPercent = { ...path[i] }; // Creiamo un nuovo oggetto per garantire la reattività
+  // GESTORE CLICK SEMPLIFICATO - COME NEL VECCHIO SCRIPT
+  async function handleLibraryClick(library) {
+    if (isAnimating) return;
+    
+    if (selectedLibrary && selectedLibrary.id === library.id) {
+      showDetailsPanel = !showDetailsPanel;
+      return;
+    }
+
+    // Memorizza la biblioteca precedente
+    const previousLibraryId = selectedLibrary ? selectedLibrary.id : null;
+    
+    selectedLibrary = library;
+    isAnimating = true;
+    showDetailsPanel = true;
+    
+    // Generiamo un percorso personalizzato per l'animazione
+    const path = generatePath(
+      userPositionPercent, 
+      { x: library.xPercent, y: library.yPercent },
+      library.id,
+      previousLibraryId
+    );
+    
+    // Animiamo il movimento lungo il percorso - SEMPLICE COME NEL VECCHIO SCRIPT
+    for (const point of path) {
+      userPositionPercent = point;
       await new Promise(resolve => setTimeout(resolve, 30));
     }
     
-    // Assicuriamoci che alla fine il pallino sia esattamente alla destinazione
-    userPositionPercent = { x: library.xPercent, y: library.yPercent };
-  } catch (error) {
-    console.error("Errore durante l'animazione:", error);
-    // In caso di errore, posiziona comunque il pallino alla destinazione
-    userPositionPercent = { x: library.xPercent, y: library.yPercent };
+    // Attendiamo un momento prima di completare l'animazione
+    setTimeout(() => {
+      isAnimating = false;
+    }, 300);
   }
   
-  // Completiamo l'animazione dopo un breve ritardo
-  setTimeout(() => {
-    isAnimating = false;
-  }, 300);
-}
-  
-function generatePath(start, end, libraryId, previousLibraryId) {
-  const steps = 15;
-  
-  // Definiamo alcuni percorsi standard riutilizzabili
-  const standardRoutes = {
-    // Percorso da sinistra a destra (tipo Scientifica → Umanistica)
-    "leftToRight": [
-      { x: 38, y: 55 },    // Punto partenza tipo Biblioteca Scientifica
-      { x: 36, y: 55 },    // Leggermente a sinistra
-      { x: 36, y: 79 },    // Discesa verticale
-      { x: 85, y: 79 },    // Movimento orizzontale
-      { x: 85, y: 77 }     // Aggiustamento finale e arrivo
-    ],
+  // FUNZIONE generatePath CORRETTA - COPIATA DAL VECCHIO SCRIPT
+  function generatePath(start, end, libraryId, previousLibraryId) {
+    const steps = 15;
     
-    // Percorso da destra a sinistra (tipo Umanistica → Scientifica)
-    "rightToLeft": [
-      { x: 85, y: 77 },    // Punto partenza tipo Biblioteca Umanistica
-      { x: 85, y: 79 },    // Leggermente verso l'alto
-      { x: 36, y: 79 },    // Movimento orizzontale
-      { x: 36, y: 55 },    // Salita verticale
-      { x: 38, y: 55 }     // Aggiustamento finale e arrivo
-    ],
+    // Definiamo alcuni percorsi standard riutilizzabili
+    const standardRoutes = {
+      // Percorso da sinistra a destra (tipo Scientifica → Umanistica)
+      "leftToRight": [
+        { x: 38, y: 55 },    // Punto partenza tipo Biblioteca Scientifica
+        { x: 36, y: 55 },    // Leggermente a sinistra
+        { x: 36, y: 79 },    // Discesa verticale
+        { x: 85, y: 79 },    // Movimento orizzontale
+        { x: 85, y: 77 }     // Aggiustamento finale e arrivo
+      ],
+      
+      // Percorso da destra a sinistra (tipo Umanistica → Scientifica)
+      "rightToLeft": [
+        { x: 85, y: 77 },    // Punto partenza tipo Biblioteca Umanistica
+        { x: 85, y: 79 },    // Leggermente verso l'alto
+        { x: 36, y: 79 },    // Movimento orizzontale
+        { x: 36, y: 55 },    // Salita verticale
+        { x: 38, y: 55 }     // Aggiustamento finale e arrivo
+      ],
+      
+      "5-3": [
+        { x: 42, y: 80 },    // Punto partenza (supposto per Corridoio Arancione)
+        { x: 36, y: 80 },    // Leggermente in basso
+        { x: 36, y: 55 },    // Movimento orizzontale verso le scale
+        { x: 38, y: 55 }
+      ],
+      
+      "3-5": [
+        { x: 38, y: 55 },    // Punto partenza al secondo piano
+        { x: 36, y: 55 },    // Movimento verso le scale
+        { x: 36, y: 80 },    // Discesa al primo piano
+        { x: 42, y: 80 }
+      ],
+      
+      "5-4": [
+        { x: 42, y: 80 },    // Punto partenza (supposto per Corridoio Arancione)
+        { x: 42, y: 78 },    // Leggermente in basso
+        { x: 85, y: 78 },    // Movimento orizzontale verso le scale
+        { x: 85, y: 77 }
+      ],
+      
+      "4-5": [
+        { x: 85, y: 77 },    // Punto partenza al secondo piano
+        { x: 85, y: 78 },    // Movimento verso le scale
+        { x: 42, y: 78 },    // Discesa al primo piano
+        { x: 42, y: 80 }
+      ]
+    };
     
-    "5-3": [
-      { x: 42, y: 80 },    // Punto partenza (supposto per Corridoio Arancione)
-      { x: 36, y: 80 },    // Leggermente in basso
-      { x: 36, y: 55 },    // Movimento orizzontale verso le scale
-      { x: 38, y: 55 }
-    ],
-    
-    "3-5": [
-      { x: 38, y: 55 },    // Punto partenza al secondo piano
-      { x: 36, y: 55 },    // Movimento verso le scale
-      { x: 36, y: 80 },    // Discesa al primo piano
-      { x: 42, y: 80 }
-    ],
-    
-    "5-4": [
-      { x: 42, y: 80 },    // Punto partenza (supposto per Corridoio Arancione)
-      { x: 42, y: 78 },    // Leggermente in basso
-      { x: 85, y: 78 },    // Movimento orizzontale verso le scale
-      { x: 85, y: 77 }
-    ],
-    
-    "4-5": [
-      { x: 85, y: 77 },    // Punto partenza al secondo piano
-      { x: 85, y: 78 },    // Movimento verso le scale
-      { x: 42, y: 78 },    // Discesa al primo piano
-      { x: 42, y: 80 }
-    ]
-  };
-  
-  // Mappa delle coppie che utilizzano percorsi standard
-  const routePatterns = {
-    "leftToRight": ["1-2", "3-4", "6-7"],
-    "rightToLeft": ["2-1", "4-3", "7-6"],
-    "5-3": ["5-3"],
-    "3-5": ["3-5"],
-    "5-4": ["5-4"],
-    "4-5": ["4-5"]
-  };
+    // Mappa delle coppie che utilizzano percorsi standard
+    const routePatterns = {
+      "leftToRight": ["1-2", "3-4", "6-7"],
+      "rightToLeft": ["2-1", "4-3", "7-6"],
+      "5-3": ["5-3"],
+      "3-5": ["3-5"],
+      "5-4": ["5-4"],
+      "4-5": ["4-5"]
+    };
 
-  // Controlla prima i percorsi speciali
-  if (previousLibraryId) {
-    const pathKey = `${previousLibraryId}-${libraryId}`;
-    
-    // Cerca se questa coppia usa uno dei percorsi standard
-    for (const [routeType, pairs] of Object.entries(routePatterns)) {
-      if (pairs.includes(pathKey)) {
-        return interpolatePath(standardRoutes[routeType], steps);
+    // Controlla prima i percorsi speciali
+    if (previousLibraryId) {
+      const pathKey = `${previousLibraryId}-${libraryId}`;
+      
+      // Cerca se questa coppia usa uno dei percorsi standard
+      for (const [routeType, pairs] of Object.entries(routePatterns)) {
+        if (pairs.includes(pathKey)) {
+          return interpolatePath(standardRoutes[routeType], steps);
+        }
       }
     }
-  }
-  
-  // Percorsi personalizzati per singola biblioteca dal punto di ingresso di default
-  const customPaths = {
-    1: [ // Biblioteca Corridoio Verde Piano Terra
-      { x: defaultUserPosition.x, y: defaultUserPosition.y }, 
-      { x: defaultUserPosition.x + 3, y: defaultUserPosition.y }, 
-      { x: defaultUserPosition.x + 3, y: end.y }, 
-      { x: end.x, y: end.y } 
-    ],
-    2: [ // Biblioteca Corridoio Blu Piano Terra
-      { x: defaultUserPosition.x, y: defaultUserPosition.y },
-      { x: defaultUserPosition.x + 3, y: defaultUserPosition.y },
-      { x: defaultUserPosition.x + 3, y: defaultUserPosition.y - 6 },
-      { x: end.x, y: defaultUserPosition.y - 6 },
-      { x: end.x, y: end.y } 
-    ],
-    3: [ // Biblioteca Corridoio Verde Primo Piano
-      { x: defaultUserPosition.x, y: defaultUserPosition.y }, 
-      { x: defaultUserPosition.x + 3, y: defaultUserPosition.y },
-      { x: defaultUserPosition.x + 3, y: end.y }, 
-      { x: end.x, y: end.y } 
-    ],
-    4: [ // Biblioteca Corridoio Blu Primo Piano
-      { x: defaultUserPosition.x, y: defaultUserPosition.y },
-      { x: defaultUserPosition.x + 3, y: defaultUserPosition.y },
-      { x: defaultUserPosition.x + 3, y: defaultUserPosition.y - 6 },
-      { x: end.x, y: defaultUserPosition.y - 6 },
-      { x: end.x, y: end.y } 
-    ],
-    5: [ // Biblioteca Corridoio Arancione Primo Piano
-      { x: defaultUserPosition.x, y: defaultUserPosition.y },        
-      { x: defaultUserPosition.x + 3, y: defaultUserPosition.y },         
-      { x: defaultUserPosition.x + 3, y: end.y },   
-      { x: end.x, y: end.y }
-    ],
-    6: [ // Biblioteca Corridoio Verde Secondo Piano
-      { x: defaultUserPosition.x, y: defaultUserPosition.y },
-      { x: defaultUserPosition.x + 3, y: defaultUserPosition.y }, 
-      { x: defaultUserPosition.x + 3, y: end.y }, 
-      { x: end.x, y: end.y } 
-    ],
-    7: [ // Biblioteca Corridoio Blu Secondo Piano
-      { x: defaultUserPosition.x, y: defaultUserPosition.y },
-      { x: defaultUserPosition.x + 3, y: defaultUserPosition.y }, 
-      { x: defaultUserPosition.x + 3, y: defaultUserPosition.y - 6 }, 
-      { x: end.x, y: defaultUserPosition.y - 6 }, 
-      { x: end.x, y: end.y } 
-    ]
-  };
-  
-  // Se richiesto percorso dalla posizione di partenza predefinita
-  if (!previousLibraryId && customPaths[libraryId]) {
-    return interpolatePath(customPaths[libraryId], steps);
-  }
-  
-  // Per percorsi personalizzati da posizione attuale (non di default)
-  if (previousLibraryId === null) {
-    // Crea un percorso semplice dalla posizione attuale
-    const simplePath = [
-      { x: start.x, y: start.y },
-      { x: (start.x + end.x) / 2, y: start.y },
-      { x: (start.x + end.x) / 2, y: end.y },
-      { x: end.x, y: end.y }
-    ];
-    return interpolatePath(simplePath, steps);
-  }
-
-  // Fallback: percorso semplice dalla posizione corrente alla destinazione
-  return interpolatePath([
-    { x: start.x, y: start.y },
-    { x: end.x, y: end.y }
-  ], steps * 2); // Usiamo più passi per un movimento più fluido
-}
-
-// Funzione di interpolazione del percorso migliorata
-function interpolatePath(waypoints, stepsPerSegment) {
-  if (!waypoints || waypoints.length < 2) {
-    console.error("Waypoints non validi per l'interpolazione", waypoints);
-    return [];
-  }
-  
-  const result = [];
-  
-  // Per ogni segmento tra due waypoints
-  for (let i = 0; i < waypoints.length - 1; i++) {
-    const start = waypoints[i];
-    const end = waypoints[i + 1];
     
-    if (!start || !end || typeof start.x !== 'number' || typeof start.y !== 'number' || 
-        typeof end.x !== 'number' || typeof end.y !== 'number') {
-      console.error("Coordinate non valide nel waypoint", { start, end });
-      continue; // Salta questo segmento
+    // Percorsi personalizzati per singola biblioteca
+    const customPaths = {
+      1: [ // Biblioteca Corridoio Verde Piano Terra
+        { x: start.x, y: start.y }, 
+        { x: start.x + 3, y: start.y }, 
+        { x: start.x + 3, y: end.y }, 
+        { x: end.x, y: end.y } 
+      ],
+      2: [ // Biblioteca Corridoio Blu Piano Terra
+        { x: start.x, y: start.y },
+        { x: start.x + 3, y: start.y },
+        { x: start.x + 3, y: start.y - 6 },
+        { x: end.x, y: start.y - 6 },
+        { x: end.x, y: end.y } 
+      ],
+      3: [ // Biblioteca Corridoio Verde Primo Piano
+        { x: start.x, y: start.y }, 
+        { x: start.x + 3, y: start.y },
+        { x: start.x + 3, y: end.y }, 
+        { x: end.x, y: end.y } 
+      ],
+      4: [ // Biblioteca Corridoio Blu Primo Piano
+        { x: start.x, y: start.y },
+        { x: start.x + 3, y: start.y },
+        { x: start.x + 3, y: start.y - 6 },
+        { x: end.x, y: start.y - 6 },
+        { x: end.x, y: end.y } 
+      ],
+      5: [ // Biblioteca Corridoio Arancione Primo Piano
+        { x: start.x, y: start.y },        
+        { x: start.x + 3, y: start.y },         
+        { x: start.x + 3, y: end.y },   
+        { x: end.x, y: end.y }
+      ],
+      6: [ // Biblioteca Corridoio Verde Secondo Piano
+        { x: start.x, y: start.y },
+        { x: start.x + 3, y: start.y }, 
+        { x: start.x + 3, y: end.y }, 
+        { x: end.x, y: end.y } 
+      ],
+      7: [ // Biblioteca Corridoio Blu Secondo Piano
+        { x: start.x, y: start.y },
+        { x: start.x + 3, y: start.y }, 
+        { x: start.x + 3, y: start.y - 6 }, 
+        { x: end.x, y: start.y - 6 }, 
+        { x: end.x, y: end.y } 
+      ]
+    };
+    
+    // Se esiste un percorso standard per questa biblioteca
+    if (customPaths[libraryId]) {
+      return interpolatePath(customPaths[libraryId], steps);
     }
+
+    // Fallback vuoto (nessun movimento)
+    return [end];
+  }
+
+  // Funzione di interpolazione del percorso - COPIATA DAL VECCHIO SCRIPT
+  function interpolatePath(waypoints, stepsPerSegment) {
+    const result = [];
     
-    // Crea steps punti interpolati tra start e end
-    for (let step = 0; step <= stepsPerSegment; step++) {
-      const t = step / stepsPerSegment;
-      const x = start.x + (end.x - start.x) * t;
-      const y = start.y + (end.y - start.y) * t;
+    // Per ogni segmento tra due waypoints
+    for (let i = 0; i < waypoints.length - 1; i++) {
+      const start = waypoints[i];
+      const end = waypoints[i + 1];
       
-      result.push({ x, y });
+      // Crea steps punti interpolati tra start e end
+      for (let step = 0; step <= stepsPerSegment; step++) {
+        const t = step / stepsPerSegment;
+        const x = start.x + (end.x - start.x) * t;
+        const y = start.y + (end.y - start.y) * t;
+        
+        result.push({ x, y });
+      }
+      
+      // Rimuovi l'ultimo punto per evitare duplicati (tranne per l'ultimo segmento)
+      if (i < waypoints.length - 2) {
+        result.pop();
+      }
     }
     
-    // Rimuovi l'ultimo punto per evitare duplicati (tranne per l'ultimo segmento)
-    if (i < waypoints.length - 2) {
-      result.pop();
-    }
+    return result;
   }
-  
-  return result;
-}
 
   function handleMapImageError(event) {
     event.target.src = '/api/placeholder/800/600';
     event.target.onerror = null;
   }
   
-  
-  onMount(() => {
+  // Effect per inizializzare i dati e i preferiti
+  $effect(() => {
     fetchLibraries();
     fetchBooks();
 
     // Recupera i preferiti da localStorage, se esistono
-    const storedFavorites = localStorage.getItem('favorites');
-    if (storedFavorites) {
-      userFavorites = JSON.parse(storedFavorites);
+    if (typeof localStorage !== 'undefined') {
+      const storedFavorites = localStorage.getItem('favorites');
+      if (storedFavorites) {
+        userFavorites = JSON.parse(storedFavorites);
+      }
     }
   });
 
+  // Effect per aggiornare i dati periodicamente (opzionale)
+  $effect(() => {
+    const interval = setInterval(() => {
+      fetchLibraries();
+      fetchBooks();
+    }, 30000); // Aggiorna ogni 30 secondi
 
+    return () => clearInterval(interval);
+  });
 </script>
 
 <div class="app-container min-h-screen {$darkMode ? 'dark' : ''}">
