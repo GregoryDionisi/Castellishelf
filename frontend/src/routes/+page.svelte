@@ -1,4 +1,6 @@
 <script>
+  import { onMount, tick } from 'svelte';
+  import { fade, slide, fly } from 'svelte/transition';
   import { darkMode } from '$lib/stores/darkModeStore';
   import pianoTerra from '$lib/images/piano-terra.jpg';
   import pianoPrimo from '$lib/images/piano-primo.jpg';
@@ -9,7 +11,14 @@
   import Footer from '$lib/components/Footer.svelte';
   import Statistics from '$lib/components/Statistics.svelte';
   import Header from '$lib/components/Header.svelte';
-
+  
+  // Configurazione API
+  const API_URL = 'http://localhost:3001';
+  
+  // Stati per il caricamento e gli errori (Svelte 5 runes)
+  let loading = $state(false);
+  let error = $state(null);
+  
   // Stato per gestire il piano attualmente selezionato
   let currentFloor = $state(0);
   const floors = [
@@ -17,33 +26,31 @@
     { id: 1, name: 'Primo Piano', icon: 'arrow-up-1' },
     { id: 2, name: 'Piano Secondo', icon: 'arrow-up-2' }
   ];
-
+  
   // Percorsi delle immagini per i diversi piani
   const floorImages = [
     pianoTerra,
     pianoPrimo,
     pianoSecondo
   ];
-
+  
   // Posizione del pallino che rappresenta l'utente
   const defaultUserPosition = { x: 33, y: 85 };
   let userPositionPercent = $state({ ...defaultUserPosition });
-
-  // Stato per l'animazione - SEMPLIFICATO
+  
+  // Stato per l'animazione
   let isAnimating = $state(false);
   let selectedLibrary = $state(null);
   let showDetailsPanel = $state(false);
-
+  
   // Termini di ricerca e filtri
   let searchTerm = $state("");
   let selectedCategory = $state("all");
-
-  let libraries = $state([]);
+  
+  // Dati che verranno popolati dalle API
   let books = $state([]);
-  let loading = $state(false);
-  let error = $state(null);
-  const API_URL = 'http://localhost:3001';
-
+  let libraries = $state([]);
+  
   // Lista dei preferiti dell'utente
   let userFavorites = $state([]);
 
@@ -71,6 +78,8 @@
         prestabile: book.Prestabile,
         categoria: Array.isArray(book.Categoria) ? book.Categoria : [book.Categoria]
       }));
+      
+      console.log('Libri caricati:', books.length);
     } catch (e) {
       error = `Errore nel caricamento dei libri: ${e.message}`;
       console.error(error);
@@ -79,6 +88,7 @@
     }
   }
 
+  // Funzione per recuperare le biblioteche dal backend
   async function fetchLibraries() {
     loading = true;
     error = null;
@@ -91,14 +101,21 @@
       }
 
       const result = await response.json();
-      libraries = result.data.map(lib => ({
-        id: lib.library_id,
-        name: lib.library_name,
-        floor: lib.floor,
-        xPercent: lib.x_percent,
-        yPercent: lib.y_percent,
-        books: lib.books // array di titoli
-      }));
+      
+      // Mappa i dati usando gli ID numerici invece degli ID MongoDB
+      libraries = result.data.map(lib => {        
+        return {
+          id: lib.library_id,
+          name: lib.library_name,
+          floor: lib.floor,
+          xPercent: lib.x_percent,
+          yPercent: lib.y_percent,
+          books: Array.isArray(lib.books) ? lib.books : []        
+        };
+      });
+      
+      console.log('Biblioteche caricate con ID numerici:', libraries);
+      
     } catch (e) {
       error = `Errore nel caricamento delle biblioteche: ${e.message}`;
       console.error(error);
@@ -113,19 +130,20 @@
 
   // Funzione per estrarre il colore dal nome della biblioteca
   function getCorridorColor(libraryName) {
-    if (libraryName.includes('Corridoio Verde')) {
+    if (libraryName.includes('Corridoio Verde') || libraryName.includes('Verde')) {
       return 'green';
-    } else if (libraryName.includes('Corridoio Blu')) {
+    } else if (libraryName.includes('Corridoio Blu') || libraryName.includes('Blu')) {
       return 'blue';
-    } else if (libraryName.includes('Corridoio Arancione')) {
+    } else if (libraryName.includes('Corridoio Arancione') || libraryName.includes('Arancione')) {
       return 'orange';
     } else {
-      return 'default'; // Colore di default se non viene rilevato nessun corridoio
+      return 'default';
     }
   }
-
-  // Variabile reattiva che produce un array nuovo con le categorie estratte per ogni libreria
-  const librariesWithCategories = $derived(libraries.map(lib => {
+  
+  // Variabile derivata che produce un array nuovo con le categorie estratte per ogni libreria
+  let librariesWithCategories = $derived(libraries.map(lib => {
+    // per ogni titolo di libro nella libreria, cerco il libro completo e prendo le categorie
     const libCategories = lib.books
       .map(title => {
         const bookObj = books.find(b => b.titolo === title);
@@ -133,21 +151,23 @@
       })
       .flat();
 
+    // estraggo solo categorie uniche
     const uniqueCategories = [...new Set(libCategories)];
 
+    // restituisco una copia dell'oggetto libreria con solo la nuova proprietà categories calcolata
     return { ...lib, categories: uniqueCategories };
   }));
 
   // Estrai tutte le categorie uniche dai libri
-  const allBookCategories = $derived(Array.from(
+  let allBookCategories = $derived(Array.from(
     new Set(books.flatMap(book => book.categoria))
   ).sort());
 
   // Aggiungi "Tutte le categorie" all'inizio
-  const categories = $derived(["Tutte le categorie", ...allBookCategories]);
+  let categories = $derived(["Tutte le categorie", ...allBookCategories]);
 
   // Filtra le biblioteche in base al piano, ricerca e categoria
-  const visibleLibraries = $derived(librariesWithCategories
+  let visibleLibraries = $derived(librariesWithCategories
     .filter(lib => lib.floor === currentFloor)
     .filter(lib => lib.name.toLowerCase().includes(searchTerm.toLowerCase()))
     .filter(lib =>
@@ -172,13 +192,9 @@
     } else {
       userFavorites = [...userFavorites, libraryId];
     }
-    // Salva preferiti in localStorage
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('favorites', JSON.stringify(userFavorites));
-    }
   }
-
-  // GESTORE CLICK SEMPLIFICATO - COME NEL VECCHIO SCRIPT
+  
+  // Gestore per il click su una biblioteca
   async function handleLibraryClick(library) {
     if (isAnimating) return;
     
@@ -202,7 +218,7 @@
       previousLibraryId
     );
     
-    // Animiamo il movimento lungo il percorso - SEMPLICE COME NEL VECCHIO SCRIPT
+    // Animiamo il movimento lungo il percorso
     for (const point of path) {
       userPositionPercent = point;
       await new Promise(resolve => setTimeout(resolve, 30));
@@ -214,7 +230,6 @@
     }, 300);
   }
   
-  // FUNZIONE generatePath CORRETTA - COPIATA DAL VECCHIO SCRIPT
   function generatePath(start, end, libraryId, previousLibraryId) {
     const steps = 15;
     
@@ -347,7 +362,7 @@
     return [end];
   }
 
-  // Funzione di interpolazione del percorso - COPIATA DAL VECCHIO SCRIPT
+  // Funzione di interpolazione del percorso
   function interpolatePath(waypoints, stepsPerSegment) {
     const result = [];
     
@@ -379,28 +394,9 @@
     event.target.onerror = null;
   }
   
-  // Effect per inizializzare i dati e i preferiti
-  $effect(() => {
-    fetchLibraries();
-    fetchBooks();
-
-    // Recupera i preferiti da localStorage, se esistono
-    if (typeof localStorage !== 'undefined') {
-      const storedFavorites = localStorage.getItem('favorites');
-      if (storedFavorites) {
-        userFavorites = JSON.parse(storedFavorites);
-      }
-    }
-  });
-
-  // Effect per aggiornare i dati periodicamente (opzionale)
-  $effect(() => {
-    const interval = setInterval(() => {
-      fetchLibraries();
-      fetchBooks();
-    }, 30000); // Aggiorna ogni 30 secondi
-
-    return () => clearInterval(interval);
+  onMount(async () => {
+    // Carica i dati dalle API
+    await Promise.all([fetchBooks(), fetchLibraries()]);
   });
 </script>
 
@@ -516,7 +512,7 @@
               <span class="text-2xl font-semibold">{selectedLibrary.floor}</span>
             </div>
           
-            <div class="stat-box p-3 rounded-lg {$darkMode ? 'bg-gray-700' : 'bg-gray-100'}">
+            <div class="stat-box col-span-2 w-full p-3 rounded-lg {$darkMode ? 'bg-gray-700' : 'bg-gray-100'}">
               <span class="block text-sm opacity-70">Categorie</span>
               <div class="flex flex-wrap gap-2 mt-1">
                 {#each selectedLibrary.categories as categoryId}
@@ -529,6 +525,7 @@
               </div>
             </div>
           </div>
+          
           
           
           <p class="text-sm mb-4">{selectedLibrary.description}</p>

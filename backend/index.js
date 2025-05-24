@@ -40,8 +40,8 @@ app.get('/libraries', async (req, res) => {
         const rawLibraries = await database.collection('biblioteche').find({}).toArray();
         
         const libraries = rawLibraries.map(lib => ({
-            library_id: lib._id.toString(), // Converti ObjectId in stringa
-            library_name: lib.Nome,
+            library_id: lib.id,
+            library_name: lib.Nome, 
             floor: lib.Floor,
             x_percent: lib.xPercent,
             y_percent: lib.yPercent,
