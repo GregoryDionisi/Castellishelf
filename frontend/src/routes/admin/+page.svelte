@@ -20,7 +20,7 @@
   let editingBook = null;  
   let searchTerm = '';
   let selectedCategory = 'all';
-  let categories = ['Storia', 'Narrativa', 'Scienze', 'Arte', 'Filosofia'];
+  let categories = ['Geografia','Storia', 'Narrativa','Romanzo','Romanzo Storico', 'Tecnologia', 'Horror','Chimica', 'Meccanica', 'Psicologico', 'Thriller', 'Dramma', 'Saggio', 'Manuale', 'Informatica', 'Enciclopedia', 'Raccolta'];  
   let loading = false;
   let error = null;
  
