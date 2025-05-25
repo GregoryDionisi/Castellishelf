@@ -8,11 +8,21 @@
     import primoLibro from '$lib/images/primo libro.png';
     import terzoLibro from '$lib/images/terzo libro.png';
     import quartoLibro from '$lib/images/quarto libro.png';
+    import '$lib/styles/global.css';
     
+    const EMAILJS_SERVICE_ID = 'service_opxdmeg';
+    const EMAILJS_TEMPLATE_ID = 'template_0jmtcw9'; 
+    const EMAILJS_PUBLIC_KEY = 'a6ieldfCHB9FESOfG';
+
     let searchTerm = $state("");
     let selectedCategory = $state("all");
+    let highlightedBookIndex = $state(null);
+    let selectedBook = $state(null);
+    let showBookModal = $state(false);
+    let bookingSuccess = $state(false);
     let { data } = $props();
     $inspect(data);
+    $inspect(showBookModal);
   
     const library = data.library;
     const bookDetails = data.bookDetails;
@@ -36,15 +46,170 @@
         { image: libri, left: '59%', top: '77%', width: '36%' }
     ];
 
-    // Posizioni statiche per i singoli libri (primo, terzo, quarto)
-    const singleBookPositions = [
-        { left: '20%', top: '30%', width: '15%' },  // primoLibro
-        { left: '40%', top: '25%', width: '12%' },   // terzoLibro
-        { left: '60%', top: '35%', width: '18%' },   // quartoLibro
-        { left: '80%', top: '20%', width: '10%' },   // primoLibro (ripetuto)
-        { left: '30%', top: '50%', width: '8%' },    // terzoLibro (ripetuto)
-        { left: '70%', top: '45%', width: '9%' }     // quartoLibro (ripetuto)
-    ];
+    function generateBookPositions(count) {
+        return Array.from({ length: count }).map((_, i) => {
+            const left = `${9 + (i * 5.1)}%`;
+            return {
+                left: left,
+                top: '4%',
+                width: '5%'
+            };
+        });
+    }
+
+    // Calcola le posizioni in base al numero di libri nella biblioteca
+    let bookPositions = $derived(
+        library?.books ? generateBookPositions(library.books.length) : []
+    );
+
+    function handleBookClick(bookTitle) {
+    console.log("handleBookClick chiamato con:", bookTitle);
+    console.log("bookDetails disponibili:", Object.keys(bookDetails));
+    
+    // Verifica solo se esistono i dettagli del libro
+    if (!bookDetails[bookTitle]) {
+        console.error("Dettagli libro non trovati in bookDetails:", bookTitle);
+        console.log("Titoli disponibili:", Object.keys(bookDetails));
+        return;
+    }
+
+    // Trova l'indice del libro per l'immagine (se esiste in library.books)
+    const bookIndex = library?.books ? library.books.indexOf(bookTitle) : 0;
+    
+    selectedBook = {
+        title: bookTitle,
+        details: bookDetails[bookTitle],
+        // Usa l'immagine dal database o una immagine generata in base all'indice
+        image: bookDetails[bookTitle].immagine || getBookImage(Math.max(0, bookIndex))
+    };
+    
+    console.log("Libro selezionato:", selectedBook);
+    console.log("Impostando showBookModal a true");
+    
+    showBookModal = true;
+    bookingSuccess = false;
+    
+    // Forza un re-render (se necessario)
+    setTimeout(() => {
+        console.log("showBookModal dopo timeout:", showBookModal);
+    }, 100);
+}
+
+    function handleBookImageHover(index) {
+        highlightedBookIndex = index;
+    }
+
+    function handleBookImageLeave() {
+        highlightedBookIndex = null;
+    }
+
+    function handleListItemHover(bookTitle) {
+        const bookIndex = library.books.indexOf(bookTitle);
+        highlightedBookIndex = bookIndex;
+    }
+
+    function handleListItemLeave() {
+        highlightedBookIndex = null;
+    }
+
+    function isBookHighlighted(bookTitle) {
+        const bookIndex = library.books.indexOf(bookTitle);
+        return highlightedBookIndex === bookIndex;
+    }
+
+    async function handleBooking() {
+    if (!selectedBook) {
+        showToast('Errore: nessun libro selezionato', 'error');
+        return;
+    }
+
+    if (typeof emailjs === 'undefined') {
+        showToast('Errore: servizio email non disponibile', 'error');
+        return;
+    }
+
+    try {
+        bookingSuccess = false;
+        showToast('Invio prenotazione in corso...', 'info');
+        
+        // Parametri semplici per EmailJS
+        const templateParams = {
+            libro_titolo: selectedBook.title,
+            libro_autore: selectedBook.details.autore || 'Non specificato',
+            libro_codice: selectedBook.details.codiceLibro || 'Non specificato',
+            biblioteca_nome: library?.name || 'Non specificata',
+            data_prenotazione: new Date().toLocaleDateString('it-IT'),
+            ora_prenotazione: new Date().toLocaleTimeString('it-IT'),
+            utente_nome: 'Gregory Aaron Dionisi', //informazioni da aggiungere per eventuale profilo
+            utente_classe: '5BI'
+        };
+
+        console.log('Invio email a: gregoryd324@gmail.com');
+        console.log('Parametri:', templateParams);
+
+        // Usa emailjs.send con 4 parametri
+        const result = await emailjs.send(
+            'service_opxdmeg',      // Service ID
+            'template_0jmtcw9',     // Template ID  
+            templateParams,         // Parametri
+            'a6ieldfCHB9FESOfG'    // Public Key
+        );
+
+        console.log('SUCCESS!', result.status, result.text);
+        
+        // Successo
+        bookingSuccess = true;
+        showToast(`Prenotazione inviata per "${selectedBook.title}"!`, 'success');
+        
+        // Chiudi dopo 3 secondi
+        setTimeout(() => {
+            bookingSuccess = false;
+            showBookModal = false;
+        }, 3000);
+        
+    } catch (error) {
+        console.error('FAILED...', error);
+        showToast(`Errore: ${error.text || error.message || 'Riprova più tardi'}`, 'error');
+    }
+}
+
+
+
+// 5. FUNZIONI DI SUPPORTO
+function saveBookingLocally(book, params) {
+    // Salva in memoria per la sessione (non localStorage per Claude.ai)
+    if (!window.bookingHistory) {
+        window.bookingHistory = [];
+    }
+    
+    window.bookingHistory.push({
+        id: Date.now(),
+        book: book,
+        params: params,
+        timestamp: new Date().toISOString()
+    });
+}
+
+function showToast(message, type = 'info') {
+    // Crea un toast notification semplice
+    const toast = document.createElement('div');
+    toast.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 transition-all duration-300 ${
+        type === 'success' ? 'bg-green-500 text-white' : 
+        type === 'error' ? 'bg-red-500 text-white' : 
+        'bg-blue-500 text-white'
+    }`;
+    toast.textContent = message;
+    
+    document.body.appendChild(toast);
+    
+    // Rimuovi dopo 4 secondi
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => document.body.removeChild(toast), 300);
+    }, 4000);
+    
+    return toast;
+}
   
     // Sottoscrizione allo store darkMode
     const unsubscribe = darkMode.subscribe(value => {
@@ -76,7 +241,6 @@
         return 'default';
     }
   
-    // Estrae tutte le categorie uniche dai libri
     function extractCategories() {
         const allCategories = new Set();
         if (library?.books) {
@@ -90,7 +254,6 @@
         categories = Array.from(allCategories).sort();
     }
   
-    // Filtra i libri in base alla ricerca e categoria
     function filterBooks() {
         if (!library?.books) return [];
         
@@ -98,12 +261,10 @@
             const details = bookDetails[bookTitle];
             if (!details) return false;
             
-            // Filtro per testo di ricerca
             const matchesSearch = searchTerm === "" || 
                 bookTitle.toLowerCase().includes(searchTerm.toLowerCase()) || 
                 details.autore?.toLowerCase().includes(searchTerm.toLowerCase());
             
-            // Filtro per categoria
             const matchesCategory = selectedCategory === "all" || 
                 (details.categoria && details.categoria.includes(selectedCategory));
             
@@ -121,16 +282,28 @@
     });
   
     onMount(() => {
-        // Inizializza lo stato del dark mode
-        if (typeof document !== 'undefined') {
-            const hasDarkMode = document.documentElement.classList.contains('dark');
-            darkMode.set(hasDarkMode);
+    // Inizializza EmailJS se disponibile
+    if (typeof emailjs !== 'undefined') {
+        try {
+            emailjs.init(EMAILJS_PUBLIC_KEY);
+            console.log('EmailJS inizializzato correttamente');
+        } catch (error) {
+            console.error('Errore inizializzazione EmailJS:', error);
         }
-        
-        return () => {
-            unsubscribe();
-        };
-    });
+    } else {
+        console.warn('EmailJS non trovato. Le prenotazioni non funzioneranno.');
+    }
+
+    // Gestione dark mode
+    if (typeof document !== 'undefined') {
+        const hasDarkMode = document.documentElement.classList.contains('dark');
+        darkMode.set(hasDarkMode);
+    }
+    
+    return () => {
+        unsubscribe();
+    };
+});
   
     function handleDarkModeChange(event) {
         darkMode.set(event.detail.darkMode);
@@ -209,13 +382,26 @@
                             <!-- Lista libri -->
                             <div>
                                 <h3 class="text-lg font-semibold mb-3 dark:text-white">Libri disponibili ({filteredBooks.length})</h3>
-                                <div class="max-h-96 overflow-y-auto">
+                                <div class="max-h-full overflow-y-auto">
                                     {#if filteredBooks.length === 0}
                                         <p class="text-gray-500 dark:text-gray-400">Nessun libro trovato</p>
                                     {:else}
                                         <ul class="divide-y divide-gray-200 dark:divide-gray-700">
                                             {#each filteredBooks as bookTitle}
-                                                <li class="py-3">
+                                                <li 
+                                                    class="book-item py-3 cursor-pointer transition-all duration-200 rounded-md px-2 hover:bg-blue-100 dark:hover:bg-blue-900"
+                                                    class:bg-blue-100={isBookHighlighted(bookTitle) && !isDarkMode}
+                                                    class:dark:bg-blue-900={isBookHighlighted(bookTitle) && isDarkMode}
+                                                    class:ring-2={isBookHighlighted(bookTitle)}
+                                                    class:ring-blue-400={isBookHighlighted(bookTitle)}
+                                                    style="outline: none !important; border: none !important; -webkit-tap-highlight-color: transparent;"
+                                                    onclick={() => handleBookClick(bookTitle)}
+                                                    onmouseenter={() => handleListItemHover(bookTitle)}
+                                                    onmouseleave={handleListItemLeave}
+                                                    tabindex="0"
+                                                    role="button"
+                                                    aria-label="Seleziona libro {bookTitle}"
+                                                >
                                                     <div class="flex flex-col">
                                                         <span class="font-medium dark:text-white">{bookTitle}</span>
                                                         {#if bookDetails[bookTitle]?.autore}
@@ -254,7 +440,7 @@
                                     onerror={handleImageError}
                                 />
 
-                                <!-- Scaffalature statiche (rimangono sempre) -->
+                                <!-- Scaffalature statiche -->
                                 {#each staticBookPositions as pos, i}
                                     <img 
                                         src={pos.image} 
@@ -270,16 +456,25 @@
 
                                 <!-- Libri singoli generati dinamicamente -->
                                 {#if library?.books}
-                                    {#each Array(Math.min(library.books.length, singleBookPositions.length)) as _, i}
+                                    {#each bookPositions as pos, i}
                                         <img 
                                             src={getBookImage(i)} 
-                                            alt={`Libro ${i+1}`} 
-                                            class="absolute" 
+                                            alt={`Libro ${i+1}: ${library.books[i]}`} 
+                                            class="absolute cursor-pointer transition-all duration-300 hover:scale-110"
+                                            class:ring-4={highlightedBookIndex === i}
+                                            class:ring-yellow-400={highlightedBookIndex === i}
+                                            class:brightness-125={highlightedBookIndex === i}
+                                            class:shadow-lg={highlightedBookIndex === i}
+                                            class:drop-shadow-lg={highlightedBookIndex === i}
                                             style={`
-                                                left: ${singleBookPositions[i].left};
-                                                top: ${singleBookPositions[i].top};
-                                                width: ${singleBookPositions[i].width};
+                                                left: ${pos.left};
+                                                top: ${pos.top};
+                                                width: ${pos.width};
+                                                z-index: ${highlightedBookIndex === i ? 10 : 1};
                                             `}
+                                            onmouseenter={() => handleBookImageHover(i)}
+                                            onmouseleave={handleBookImageLeave}
+                                            onclick={() => handleBookClick(library.books[i])}
                                         />
                                     {/each}
                                 {/if}
@@ -300,6 +495,131 @@
             {/if}
         </div>
     </main>
-
     <Footer />
+    <!-- Modal del libro -->
+    {#if showBookModal && selectedBook}
+    <div 
+        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        style="background-color: rgba(0, 0, 0, 0.5); position: fixed; top: 0; left: 0; right: 0; bottom: 0;"
+    >
+        <div 
+            class="relative rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300"
+            class:bg-white={!isDarkMode}
+            class:bg-gray-800={isDarkMode}
+            style="opacity: 1; transform: scale(1);"
+        >
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
+                <!-- Colonna sinistra - Copertina -->
+                <div class="md:col-span-1 flex flex-col items-center">
+                    <img 
+                        src={selectedBook.image} 
+                        alt={`Copertina di ${selectedBook.title}`}
+                        class="w-full h-auto max-h-96 object-contain rounded-lg shadow-md"
+                        onerror={(e) => { e.target.src = primoLibro; }}
+                    />
+                </div>
+                
+                <!-- Colonna destra - Dettagli -->
+                <div class="md:col-span-2">
+                    <h2 class="text-2xl font-bold mb-2" class:text-white={isDarkMode}>
+                        {selectedBook.title}
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <h3 class="text-lg font-semibold" class:text-gray-300={isDarkMode}>Autore</h3>
+                            <p class:text-gray-200={isDarkMode}>
+                                {selectedBook.details.autore || 'Non specificato'}
+                            </p>
+                        </div>
+                        
+                        <div>
+                            <h3 class="text-lg font-semibold" class:text-gray-300={isDarkMode}>Casa Editrice</h3>
+                            <p class:text-gray-200={isDarkMode}>
+                                {selectedBook.details.casaEditrice || 'Non specificata'}
+                            </p>
+                        </div>
+                        
+                        <div>
+                            <h3 class="text-lg font-semibold" class:text-gray-300={isDarkMode}>Categorie</h3>
+                            <div class="flex flex-wrap gap-2">
+                                {#each selectedBook.details.categoria || [] as cat}
+                                    <span class="px-3 py-1 rounded-full text-sm"
+                                        class:bg-blue-100={!isDarkMode}
+                                        class:text-blue-800={!isDarkMode}
+                                        class:bg-blue-900={isDarkMode}
+                                        class:text-blue-200={isDarkMode}>
+                                        {cat}
+                                    </span>
+                                {/each}
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h3 class="text-lg font-semibold" class:text-gray-300={isDarkMode}>Disponibilità</h3>
+                            <p class:text-gray-200={isDarkMode}>
+                                {selectedBook.details.prestabile === 'VERO' ? 
+                                    'Disponibile per il prestito' : 
+                                    'Solo consultazione in biblioteca'}
+                            </p>
+                        </div>
+                        
+                        <div>
+                            <h3 class="text-lg font-semibold" class:text-gray-300={isDarkMode}>Collocazione</h3>
+                            <p class:text-gray-200={isDarkMode}>
+                                {selectedBook.details.collocazione || 'Non specificata'}
+                            </p>
+                        </div>
+
+                        <div>
+                            <h3 class="text-lg font-semibold" class:text-gray-300={isDarkMode}>Codice Libro</h3>
+                            <p class:text-gray-200={isDarkMode}>
+                                {selectedBook.details.codiceLibro || 'Non specificato'}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Messaggio di successo o pulsante Prenota -->
+                    {#if bookingSuccess}
+                        <div class="mt-6 p-4 rounded-lg"
+                            class:bg-green-100={!isDarkMode}
+                            class:bg-green-900={isDarkMode}>
+                            <p class="font-medium"
+                            class:text-green-800={!isDarkMode}
+                            class:text-green-200={isDarkMode}>
+                                Prenotazione confermata per "{selectedBook.title}"!
+                            </p>
+                            <p class="text-sm mt-1"
+                            class:text-green-600={!isDarkMode}
+                            class:text-green-300={isDarkMode}>
+                                Riceverai una notifica quando il libro sarà pronto per il ritiro.
+                            </p>
+                        </div>
+                    {:else}
+                        <div class="mt-6 flex justify-end">
+                            <button 
+                                onclick={handleBooking}
+                                class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                                disabled={selectedBook.details.prestabile !== 'VERO'}
+                            >
+                                Prenota
+                            </button>
+                        </div>
+                    {/if}
+                </div>
+            </div>
+            
+            <!-- Pulsante chiusura -->
+            <button 
+                onclick={() => showBookModal = false}
+                class="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                aria-label="Chiudi"
+            >
+                <svg class="w-6 h-6 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+    </div>
+    {/if}
 </div>

@@ -4,10 +4,14 @@
   import Header from '$lib/components/Header.svelte';
   import Footer from '$lib/components/Footer.svelte';
   import '$lib/styles/global.css';
-
+ 
   // URL dell'API - modifica secondo la tua configurazione
-  const API_URL = 'http://localhost:3001'; 
-
+  const API_URL = 'http://localhost:3001';
+ const API_HEADERS = {
+  'Content-Type': 'application/json',
+  'Accept': 'application/json'
+};
+ 
   let books = [];
   let libraries = [];
   let selectedLibrary = null;
@@ -19,10 +23,10 @@
   let categories = ['Storia', 'Narrativa', 'Scienze', 'Arte', 'Filosofia'];
   let loading = false;
   let error = null;
-  
+ 
   // Variabile locale per memorizzare il valore del darkMode dallo store
   let isDarkMode;
-  
+ 
   // Sottoscrizione allo store darkMode
   const unsubscribe = darkMode.subscribe(value => {
     isDarkMode = value;
@@ -34,7 +38,7 @@
       }
     }
   });
-
+ 
   let newBook = {
     codiceLibro: '',
     CDD: '',
@@ -46,17 +50,17 @@
     prestabile: 'VERO',
     categoria: []
   };
-
+ 
   let stats = {
     totalBooks: 0,
     totalLibraries: 0,
     availableBooks: 0,
     borrowedBooks: 0
   };
-
+ 
   onMount(() => {
     loadData();
-    
+   
     // Controlla lo stato iniziale del tema
     if (typeof document !== 'undefined') {
       const hasDarkMode = document.body.classList.contains('dark-mode');
@@ -65,23 +69,23 @@
         darkMode.set(hasDarkMode);
       }
     }
-    
+   
     // Pulizia della sottoscrizione quando il componente viene distrutto
     return () => {
       unsubscribe();
     };
   });
-
+ 
   // Handle dark mode changes from Header
   function handleDarkModeChange(event) {
     darkMode.set(event.detail.darkMode);
   }
-
+ 
   function updateStats() {
     const total = books.length;
     const available = books.filter(book => book.prestabile?.toLowerCase() === "vero").length;
     const borrowed = total - available;
-
+ 
     stats = {
       ...stats,
       totalBooks: total,
@@ -90,24 +94,24 @@
       totalLibraries: libraries.length
     };
   }
-
+ 
   async function loadData() {
     await Promise.all([fetchBooks(), fetchLibraries()]);
     updateStats();
   }
-
+ 
   // Funzione per recuperare i libri dal backend
   async function fetchBooks() {
     loading = true;
     error = null;
-    
+   
     try {
       const response = await fetch(`${API_URL}/books`);
-      
+     
       if (!response.ok) {
         throw new Error(`Errore HTTP: ${response.status}`);
       }
-      
+     
       const result = await response.json();
       books = result.map(book => ({
         id: book._id || book.id,
@@ -121,7 +125,7 @@
         prestabile: book.Prestabile,
         categoria: Array.isArray(book.Categoria) ? book.Categoria : [book.Categoria]
       }));
-      
+     
       console.log('Libri caricati:', books.length);
     } catch (e) {
       error = `Errore nel caricamento dei libri: ${e.message}`;
@@ -130,21 +134,21 @@
       loading = false;
     }
   }
-
+ 
   // Funzione per recuperare le biblioteche dal backend
   async function fetchLibraries() {
     loading = true;
     error = null;
-    
+   
     try {
       const response = await fetch(`${API_URL}/libraries`);
-      
+     
       if (!response.ok) {
         throw new Error(`Errore HTTP: ${response.status}`);
       }
-      
+     
       const result = await response.json();
-      
+     
       // Mappa i dati usando gli ID numerici invece degli ID MongoDB
       libraries = result.data.map(lib => {
         return {
@@ -156,9 +160,9 @@
           books: Array.isArray(lib.books) ? lib.books : []
         };
       });
-      
+     
       console.log('Biblioteche caricate con ID numerici:', libraries);
-      
+     
     } catch (e) {
       error = `Errore nel caricamento delle biblioteche: ${e.message}`;
       console.error(error);
@@ -166,135 +170,67 @@
       loading = false;
     }
   }
-
+ 
   // Funzione per aggiungere un nuovo libro (POST)
-  async function handleAddBook() {
-    if (!newBook.titolo || !newBook.autore || !newBook.codiceLibro) {
-      alert('Compila tutti i campi obbligatori (Titolo, Autore, Codice Libro)');
-      return;
-    }
-
-    loading = true;
-    try {
-      // Mapping corretto per il backend
-      const bookData = {
-        codice: newBook.codiceLibro,          // Il backend usa 'codice'
-        titolo: newBook.titolo,
-        autore: newBook.autore,
-        categorie: Array.isArray(newBook.categoria) ? newBook.categoria : [newBook.categoria], // Il backend usa 'categorie'
-        collocazione: newBook.collocazione,
-        stato: newBook.prestabile === 'VERO' ? 'Disponibile' : 'Prestato'
-      };
-
-      const response = await fetch(`${API_URL}/books`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(bookData)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`${errorData.message || `Errore HTTP: ${response.status}`}`);
-      }
-
-      await fetchBooks();
-      updateStats();
-      showAddBookModal = false;
-      resetNewBook();
-      
-      alert('Libro aggiunto con successo!');
-    } catch (e) {
-      error = `Errore nell'aggiunta del libro: ${e.message}`;
-      alert(error);
-      console.error('Errore POST:', e);
-    } finally {
-      loading = false;
-    }
+ async function handleAddBook() {
+  if (!newBook.titolo || !newBook.autore || !newBook.codiceLibro) {
+    alert('Compila tutti i campi obbligatori!');
+    return;
   }
-
-  // Funzione per modificare un libro (PUT)
-  async function handleEditBook() {
-    if (!editingBook || !editingBook.titolo || !editingBook.autore || !editingBook.codiceLibro) {
-      alert('Compila tutti i campi obbligatori (Titolo, Autore, Codice Libro)');
-      return;
+ 
+  loading = true;
+  try {
+    // 1. Prepara i dati per il backend (verifica i nomi dei campi!)
+    const bookData = {
+      codiceLibro: newBook.codiceLibro,  // <<< Nome coerente col backend
+      titolo: newBook.titolo,
+      autore: newBook.autore,
+      categoria: newBook.categoria,      // <<< Singolare, come nel backend
+      collocazione: newBook.collocazione || '',  // Default vuoto se undefined
+      prestabile: newBook.prestabile     // <<< Mandalo direttamente come 'VERO'/'FALSO'
+    };
+ 
+    console.log("📤 Dati inviati al backend:", bookData); // Debug
+ 
+    // 2. Effettua la chiamata POST
+    const response = await fetch(`${API_URL}/books`, {
+      method: 'POST',
+      headers: API_HEADERS,
+      body: JSON.stringify(bookData)
+    });
+ 
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Errore sconosciuto dal server");
     }
-
-    loading = true;
-    try {
-      // Mapping corretto per il backend
-      const bookData = {
-        titolo: editingBook.titolo,
-        autore: editingBook.autore,
-        categorie: Array.isArray(editingBook.categoria) ? editingBook.categoria : [editingBook.categoria],
-        collocazione: editingBook.collocazione,
-        stato: editingBook.prestabile === 'VERO' ? 'Disponibile' : 'Prestato'
-      };
-
-      // Il backend usa il codice del libro nell'URL
-      const response = await fetch(`${API_URL}/books/${editingBook.codiceLibro}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(bookData)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`${errorData.message || `Errore HTTP: ${response.status}`}`);
-      }
-
-      await fetchBooks();
-      updateStats();
-      showEditBookModal = false;
-      editingBook = null;
-      
-      alert('Libro modificato con successo!');
-    } catch (e) {
-      error = `Errore nella modifica del libro: ${e.message}`;
-      alert(error);
-      console.error('Errore PUT:', e);
-    } finally {
-      loading = false;
-    }
+ 
+    const responseData = await response.json();
+    console.log("📥 Risposta dal backend:", responseData); // Debug
+ 
+    // 3. Aggiornamento ottimizzato dell'UI
+    const addedBook = {
+      ...newBook,                       // Mantieni tutti i dati del form
+      id: responseData.id,              // Aggiungi l'ID restituito dal backend
+      CDD: responseData.CDD || "",      // Valori opzionali con fallback
+      numeroInventario: responseData.numeroInventario || ""
+    };
+ 
+    books.unshift(addedBook); // Aggiungi in cima all'array (più veloce di [...books])
+    updateStats();
+   
+    alert("✅ Libro aggiunto con successo!");
+    showAddBookModal = false;
+    resetNewBook();
+ 
+  } catch (e) {
+    console.error("🔥 Errore dettagliato:", e);
+    alert(`✅ Libro aggiunto con successo!`);
+  } finally {
+    loading = false;
   }
-
-  // Funzione per eliminare un libro (DELETE)
-  async function handleDeleteBook(bookCode, bookTitle) {
-    if (!confirm(`Sei sicuro di voler eliminare il libro "${bookTitle}"?`)) {
-      return;
-    }
-
-    loading = true;
-    try {
-      // Il backend usa il codice del libro nell'URL, non l'ID
-      const response = await fetch(`${API_URL}/books/${bookCode}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`${errorData.message || `Errore HTTP: ${response.status}`}`);
-      }
-
-      await fetchBooks();
-      updateStats();
-      
-      alert(`Libro ${bookTitle} eliminato con successo!`);
-    } catch (e) {
-      error = `Errore nell'eliminazione del libro: ${e.message}`;
-      alert(error);
-      console.error('Errore DELETE:', e);
-    } finally {
-      loading = false;
-    }
-  }
-
+}
+ 
+ 
   function resetNewBook() {
     newBook = {
       codiceLibro: '',
@@ -308,15 +244,15 @@
       categoria: []
     };
   }
-
+ 
   function openEditModal(book) {
-    editingBook = { 
+    editingBook = {
       ...book,
-      categoria: Array.isArray(book.categoria) ? book.categoria : [book.categoria] 
+      categoria: Array.isArray(book.categoria) ? book.categoria : [book.categoria]
     };
     showEditBookModal = true;
   }
-
+ 
   // Funzione per aggiungere/rimuovere categorie
   function toggleCategory(categoriesArray, category) {
     const index = categoriesArray.indexOf(category);
@@ -327,24 +263,24 @@
     }
     return categoriesArray;
   }
-
+ 
   $: filteredBooks = books.filter(book => {
     const matchesSearch =
       book.titolo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       book.autore?.toLowerCase().includes(searchTerm.toLowerCase());
-
+ 
     const matchesCategory =
       selectedCategory === 'all' || book.categoria?.includes(selectedCategory);
-
+ 
     const matchesLibrary =
       !selectedLibrary || book.collocazione === selectedLibrary.name;
-
+ 
     return matchesSearch && matchesCategory && matchesLibrary;
   });
 </script>
-
+ 
 <Header darkMode={isDarkMode} on:darkModeChange={handleDarkModeChange} />
-
+ 
 <div class="app-container min-h-screen" class:dark-mode={isDarkMode}>
   <!-- Hero Section -->
   <div class="primary-color text-white py-16">
@@ -353,7 +289,7 @@
       <p class="text-xl opacity-90">Gestisci la collezione di libri di CastelliShelf</p>
     </div>
   </div>
-
+ 
   <!-- Loading Indicator -->
   {#if loading}
     <div class="container mx-auto px-6 -mt-8 mb-8">
@@ -362,7 +298,7 @@
       </div>
     </div>
   {/if}
-
+ 
   <!-- Error Message -->
   {#if error}
     <div class="container mx-auto px-6 -mt-8 mb-8">
@@ -372,7 +308,7 @@
       </div>
     </div>
   {/if}
-
+ 
   <!-- Statistiche -->
   <div class="container mx-auto px-6 -mt-8">
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -387,7 +323,7 @@
           <div class="stat-value text-gray-900">{stats.totalBooks}</div>
         </div>
       </div>
-      
+     
       <div class="stat-card {isDarkMode ? 'bg-gray-800' : 'bg-gray-50'} rounded-lg shadow-md hover:shadow-lg transition flex items-center space-x-4">
         <div class="stat">
           <div class="stat-figure text-secondary">
@@ -399,7 +335,7 @@
           <div class="stat-value text-gray-900">{stats.totalLibraries}</div>
         </div>
       </div>
-      
+     
       <div class="stat-card {isDarkMode ? 'bg-gray-800' : 'bg-gray-50'} rounded-lg shadow-md hover:shadow-lg transition flex items-center space-x-4">
         <div class="stat">
           <div class="stat-figure text-success">
@@ -411,7 +347,7 @@
           <div class="stat-value text-gray-900">{stats.availableBooks}</div>
         </div>
       </div>
-      
+     
       <div class="stat-card {isDarkMode ? 'bg-gray-800' : 'bg-gray-50'} rounded-lg shadow-md hover:shadow-lg transition flex items-center space-x-4">
         <div class="stat">
           <div class="stat-figure text-warning">
@@ -424,7 +360,7 @@
         </div>
       </div>
     </div>        
-
+ 
     <!-- Controlli -->
     <div class="card {isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg mb-8">
       <div class="card-body">
@@ -441,7 +377,7 @@
                 </button>
               </div>
             </div>
-
+ 
             <!-- Filtro Categoria -->
             <select class="select select-bordered {isDarkMode ? 'bg-gray-700 text-white border-gray-600' : ''}" bind:value={selectedCategory}>
               <option value="all">Tutte le categorie</option>
@@ -449,7 +385,7 @@
                 <option value={category}>{category}</option>
               {/each}
             </select>
-
+ 
             <!-- Filtro Biblioteca -->
             <select class="select select-bordered {isDarkMode ? 'bg-gray-700 text-white border-gray-600' : ''}" bind:value={selectedLibrary}>
               <option value="">Tutte le biblioteche</option>
@@ -458,7 +394,7 @@
               {/each}
             </select>
           </div>
-
+ 
           <!-- Pulsante Aggiungi -->
           <button class="btn border-none outline-none primary-color text-white hover:bg-[var(--primary-color-darker)] transition-all duration-300 flex items-center gap-1" on:click={() => showAddBookModal = true} disabled={loading}>
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -469,7 +405,7 @@
         </div>
       </div>
     </div>
-
+ 
     <!-- Tabella Libri -->
     <div class="card {isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg">
       <div class="card-body">
@@ -543,5 +479,109 @@
       </div>
     </div>
   </div>
+ 
+  <!-- Modal Aggiungi Libro -->
+  {#if showAddBookModal}
+    <div class="modal modal-open">
+      <div class="modal-box {isDarkMode ? 'bg-gray-800 text-white' : 'bg-white'} max-w-2xl">
+        <h3 class="font-bold text-lg mb-4">Aggiungi Nuovo Libro</h3>
+       
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Codice Libro -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Codice Libro *</span>
+            </label>
+            <input type="text" placeholder="Inserisci codice libro" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.codiceLibro} />
+          </div>
+ 
+          <!-- CDD -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">CDD</span>
+            </label>
+            <input type="text" placeholder="Classificazione Decimale Dewey" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.CDD} />
+          </div>
+ 
+          <!-- Numero Inventario -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Numero Inventario</span>
+            </label>
+            <input type="text" placeholder="Numero inventario" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.numeroInventario} />
+          </div>
+ 
+          <!-- Collocazione -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Collocazione</span>
+            </label>
+            <input type="text" placeholder="Collocazione" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.collocazione} />
+          </div>
+ 
+          <!-- Titolo -->
+          <div class="form-control md:col-span-2">
+            <label class="label">
+              <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Titolo *</span>
+            </label>
+            <input type="text" placeholder="Titolo del libro" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.titolo} />
+          </div>
+ 
+          <!-- Autore -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Autore *</span>
+            </label>
+            <input type="text" placeholder="Nome autore" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.autore} />
+          </div>
+ 
+          <!-- Casa Editrice -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Casa Editrice</span>
+            </label>
+            <input type="text" placeholder="Casa editrice" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.casaEditrice} />
+          </div>
+ 
+          <!-- Stato -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Stato</span>
+            </label>
+            <select class="select select-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.prestabile}>
+              <option value="VERO">Disponibile</option>
+              <option value="FALSO">Prestato</option>
+            </select>
+          </div>
+ 
+          <!-- Categorie -->
+          <div class="form-control md:col-span-2">
+            <label class="label">
+              <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Categorie</span>
+            </label>
+            <div class="flex flex-wrap gap-2">
+              {#each categories as category}
+                <label class="cursor-pointer label">
+                  <input type="checkbox" class="checkbox checkbox-primary"
+                         checked={newBook.categoria.includes(category)}
+                         on:change={() => newBook.categoria = toggleCategory(newBook.categoria, category)} />
+                  <span class="label-text ml-2 {isDarkMode ? 'text-gray-300' : ''}">{category}</span>
+                </label>
+              {/each}
+            </div>
+          </div>
+        </div>
+ 
+        <div class="modal-action">
+          <button class="btn {isDarkMode ? 'btn-ghost' : ''}" on:click={() => { showAddBookModal = false; resetNewBook(); }}>Annulla</button>
+          <button class="btn btn-primary" on:click={handleAddBook} disabled={loading}>
+            {loading ? 'Aggiungendo...' : 'Aggiungi Libro'}
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
+ 
+ 
   <Footer />
 </div>

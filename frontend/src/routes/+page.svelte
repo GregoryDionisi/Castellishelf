@@ -76,7 +76,8 @@
         titolo: book.Titolo,
         casaEditrice: book["Casa editrice"],
         prestabile: book.Prestabile,
-        categoria: Array.isArray(book.Categoria) ? book.Categoria : [book.Categoria]
+        categoria: Array.isArray(book.Categoria) ? book.Categoria : [book.Categoria],
+        immagine: book.Immagine || null
       }));
       
       console.log('Libri caricati:', books.length);
@@ -415,7 +416,7 @@
     {#each floors as floor}
       <button 
         class="py-3 px-6 text-lg font-medium rounded-lg transition-all transform hover:translate-y-[-4px] relative primary-color text-white hover:bg-blue-700"
-        on:click={() => selectFloor(floor.id)}
+        onclick={() => selectFloor(floor.id)}
       >
         <span class="flex items-center gap-2">
           <!-- Icon per il piano -->
@@ -491,7 +492,7 @@
             <h3 class="font-bold text-lg mb-3">{selectedLibrary.name}</h3>
             <button 
               class="favorite-btn p-1 rounded-full" 
-              on:click={() => toggleFavorite(selectedLibrary.id)}
+              onclick={() => toggleFavorite(selectedLibrary.id)}
               aria-label={userFavorites.includes(selectedLibrary.id) ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}
             >
               <svg class="w-6 h-6 {userFavorites.includes(selectedLibrary.id) ? 'text-yellow-500 fill-current' : 'text-gray-400'}" 
@@ -556,7 +557,7 @@
             <ul class="space-y-2">
               {#each libraries.filter(lib => userFavorites.includes(lib.id)) as lib}
               <li class="favorite-item p-3 rounded-lg flex justify-between items-center {$darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'}" 
-              on:click={() => {
+              onclick={() => {
                       if (lib.floor !== currentFloor) {
                         selectFloor(lib.floor);
                         setTimeout(() => handleLibraryClick(lib), 100);
@@ -589,7 +590,7 @@
           src={floorImages[currentFloor]} 
           alt={`Mappa ${floors[currentFloor].name}`}
           class="w-full border-0 rounded-lg"
-          on:error={handleMapImageError}
+          onerror={handleMapImageError}
         />
       {:else}
         <!-- Fallback quando l'immagine non è disponibile -->
@@ -618,7 +619,7 @@
     <button 
       class="absolute transform -translate-x-1/2 -translate-y-1/2 hover:scale-110 transition-transform duration-200 ease-in-out"
       style="left: {library.xPercent}%; top: {library.yPercent}%; z-index: 5;"
-      on:click={() => handleLibraryClick(library)}
+      onclick={() => handleLibraryClick(library)}
       title={library.name}
     >
       <div class="library-marker-container">

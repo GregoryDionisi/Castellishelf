@@ -260,3 +260,45 @@
   .copyright-custom-gray {
       background-color: rgb(69, 69, 69);
   } 
+
+  /* Rimuovi il contorno blu di default del browser */
+.book-item {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.book-item:focus,
+.book-item:active,
+.book-item:focus-visible {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Rimuovi outline da tutti gli elementi cliccabili se necessario */
+*:focus {
+  outline: none !important;
+}
+
+/* Stili generali per elementi interattivi */
+.interactive-element {
+  outline: none;
+  border: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.interactive-element:focus,
+.interactive-element:active {
+  outline: none !important;
+  border: none !important;
+}
+
+.book-item:hover {
+  background-color: #dbeafe;
+}
+
+.dark .book-item:hover {
+  background-color: #1e3a8a;
+  color: white;
+}
