@@ -5,7 +5,7 @@ export async function load({ params }) {
   let libraries = [];
   let error = null;
 
-  // Recupera i libri
+  // recupera i libri
   try {
     const response = await fetch(`${API_URL}/books`);
     if (!response.ok) throw new Error(`Errore HTTP: ${response.status}`);
@@ -30,7 +30,7 @@ export async function load({ params }) {
     console.error(error);
   }
 
-  // Recupera le biblioteche
+  // recupera le biblioteche
   try {
     const response = await fetch(`${API_URL}/libraries`);
     if (!response.ok) throw new Error(`Errore HTTP: ${response.status}`);
@@ -54,7 +54,7 @@ export async function load({ params }) {
   const libraryId = parseInt(params.id, 10);
   const library = libraries.find(lib => lib.id === libraryId) || null;
 
-  // Mappa dei dettagli dei libri - AGGIUNTO tutti i campi necessari
+  // mappa dei dettagli dei libri 
   const bookDetails = {};
   books.forEach(book => {
     bookDetails[book.titolo] = {
@@ -63,10 +63,10 @@ export async function load({ params }) {
       prestabile: book.prestabile,
       categoria: book.categoria,
       immagine: book.immagine,
-      collocazione: book.collocazione,        // <- AGGIUNTO
-      codiceLibro: book.codiceLibro,          // <- AGGIUNTO
-      numeroInventario: book.numeroInventario, // <- AGGIUNTO
-      CDD: book.CDD                           // <- AGGIUNTO
+      collocazione: book.collocazione,        
+      codiceLibro: book.codiceLibro,          
+      numeroInventario: book.numeroInventario, 
+      CDD: book.CDD                           
     };
   });
 

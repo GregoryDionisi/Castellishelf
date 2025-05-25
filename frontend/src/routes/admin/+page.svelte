@@ -5,7 +5,7 @@
   import Footer from '$lib/components/Footer.svelte';
   import '$lib/styles/global.css';
  
-  // URL dell'API - modifica secondo la tua configurazione
+  // URL 
   const API_URL = 'http://localhost:3001';
  const API_HEADERS = {
   'Content-Type': 'application/json',
@@ -26,10 +26,10 @@
   let showDeleteConfirmModal = false;
   let bookToDelete = null;
  
-  // Variabile locale per memorizzare il valore del darkMode dallo store
+  // variabile locale per memorizzare il valore del darkMode dallo store
   let isDarkMode;
  
-  // Sottoscrizione allo store darkMode
+  // sottoscrizione allo store darkMode
   const unsubscribe = darkMode.subscribe(value => {
     isDarkMode = value;
     if (typeof document !== 'undefined') {
@@ -64,22 +64,22 @@
   onMount(() => {
     loadData();
    
-    // Controlla lo stato iniziale del tema
+    // controlla lo stato iniziale del tema
     if (typeof document !== 'undefined') {
       const hasDarkMode = document.body.classList.contains('dark-mode');
-      // Aggiorna lo store solo se diverso dallo stato attuale
+      // aggiorna lo store solo se diverso dallo stato attuale
       if (hasDarkMode !== isDarkMode) {
         darkMode.set(hasDarkMode);
       }
     }
    
-    // Pulizia della sottoscrizione quando il componente viene distrutto
+    // pulizia della sottoscrizione quando il componente viene distrutto
     return () => {
       unsubscribe();
     };
   });
  
-  // Handle dark mode changes from Header
+  // handle dark mode cambiamenti da Header
   function handleDarkModeChange(event) {
     darkMode.set(event.detail.darkMode);
   }
@@ -103,7 +103,7 @@
     updateStats();
   }
  
-  // Funzione per recuperare i libri dal backend
+  // funzione per recuperare i libri dal backend
   async function fetchBooks() {
     loading = true;
     error = null;
@@ -138,7 +138,7 @@
     }
   }
  
-  // Funzione per recuperare le biblioteche dal backend
+  // funzione per recuperare le biblioteche dal backend
   async function fetchLibraries() {
     loading = true;
     error = null;
@@ -152,7 +152,7 @@
      
       const result = await response.json();
      
-      // Mappa i dati usando gli ID numerici invece degli ID MongoDB
+      // mappa i dati usando gli ID numerici invece degli ID MongoDB
       libraries = result.data.map(lib => {
         return {
           id: lib.library_id,
@@ -174,7 +174,7 @@
     }
   }
  
-  // Funzione per aggiungere un nuovo libro (POST)
+  // funzione per aggiungere un nuovo libro (POST)
  async function handleAddBook() {
   if (!newBook.titolo || !newBook.autore || !newBook.codiceLibro) {
     alert('Compila tutti i campi obbligatori!');
@@ -183,23 +183,23 @@
  
   loading = true;
   try {
-    // 1. Prepara i dati per il backend (verifica i nomi dei campi!)
+    //  Prepara i dati per il backend 
     const bookData = {
       codiceLibro: newBook.codiceLibro,
-      CDD: newBook.CDD || '',                    // Campo aggiunto
-      numeroInventario: newBook.numeroInventario || '', // Campo aggiunto
+      CDD: newBook.CDD || '',                  
+      numeroInventario: newBook.numeroInventario || '', 
       titolo: newBook.titolo,
       autore: newBook.autore,
-      categoria: newBook.categoria,              // Singolare come nel backend
+      categoria: newBook.categoria,             
       collocazione: newBook.collocazione || '',
-      casaEditrice: newBook.casaEditrice || '',  // Campo aggiunto (camelCase)
-      prestabile: newBook.prestabile,            // Inviato come 'VERO'/'FALSO'
-      immagine: newBook.immagine || null        // Campo aggiunto
+      casaEditrice: newBook.casaEditrice || '',  
+      prestabile: newBook.prestabile,         
+      immagine: newBook.immagine || null       
     };
  
-    console.log("📤 Dati inviati al backend:", bookData); // Debug
+    console.log("📤 Dati inviati al backend:", bookData); 
  
-    // 2. Effettua la chiamata POST
+    // effettua la chiamata POST
     const response = await fetch(`${API_URL}/books`, {
       method: 'POST',
       headers: API_HEADERS,
@@ -212,17 +212,17 @@
     }
  
     const responseData = await response.json();
-    console.log("📥 Risposta dal backend:", responseData); // Debug
+    console.log("📥 Risposta dal backend:", responseData); 
  
-    // 3. Aggiornamento ottimizzato dell'UI
+    // aggiornamento ottimizzato dell'UI
     const addedBook = {
-      ...newBook,                       // Mantieni tutti i dati del form
-      id: responseData.id,              // Aggiungi l'ID restituito dal backend
-      CDD: responseData.CDD || "",      // Valori opzionali con fallback
+      ...newBook,                       
+      id: responseData.id,            
+      CDD: responseData.CDD || "",      
       numeroInventario: responseData.numeroInventario || ""
     };
  
-    books.unshift(addedBook); // Aggiungi in cima all'array (più veloce di [...books])
+    books.unshift(addedBook); //aggiungi in cima all'array
     updateStats();
    
     alert("✅ Libro aggiunto con successo!");
@@ -237,7 +237,7 @@
   }
 }
 
-// Funzione per modificare un libro esistente (PUT)
+// funzione per modificare un libro esistente (PUT)
 async function handleEditBook() {
   if (!editingBook.titolo || !editingBook.autore || !editingBook.codiceLibro) {
     alert('Compila tutti i campi obbligatori!');
@@ -246,7 +246,7 @@ async function handleEditBook() {
 
   loading = true;
   try {
-    // Prepara i dati per l'aggiornamento
+    // prepara i dati per l'aggiornamento
     const updateData = {
       codiceLibro: editingBook.codiceLibro,
       cdd: editingBook.CDD,
@@ -262,7 +262,7 @@ async function handleEditBook() {
 
     console.log("📤 Dati di aggiornamento inviati:", updateData);
 
-    // Effettua la chiamata PUT usando l'ID del libro
+    // effettua la chiamata PUT usando l'ID del libro
     const response = await fetch(`${API_URL}/books/${editingBook.id}`, {
       method: 'PUT',
       headers: API_HEADERS,
@@ -277,12 +277,12 @@ async function handleEditBook() {
     const responseData = await response.json();
     console.log("📥 Risposta modifica dal backend:", responseData);
 
-    // Aggiorna il libro nell'array locale
+    // aggiorna il libro nell'array locale
     const bookIndex = books.findIndex(book => book.id === editingBook.id);
     if (bookIndex !== -1) {
       books[bookIndex] = {
         ...editingBook,
-        // Aggiorna con i dati confermati dal backend
+        // aggiorna con i dati confermati dal backend
         codiceLibro: responseData["Codice libro"],
         CDD: responseData["CDD"],
         numeroInventario: responseData["Numero inventario"],
@@ -295,7 +295,7 @@ async function handleEditBook() {
         immagine: responseData["Immagine"]
       };
       
-      // Forza l'aggiornamento della reattività
+      // forza l'aggiornamento della reattività
       books = [...books];
     }
 
@@ -312,15 +312,15 @@ async function handleEditBook() {
   }
 }
 
-// Funzione per chiudere il modal di modifica
+// funzione per chiudere il modal di modifica
 function closeEditModal() {
   showEditBookModal = false;
   editingBook = null;
 }
 
-// Funzione per eliminare un libro (DELETE)
+// funzione per eliminare un libro (DELETE)
 async function handleDeleteBook(bookId, bookTitle) {
-  // Conferma prima dell'eliminazione
+  // conferma prima dell'eliminazione
   const confirmDelete = confirm(`Sei sicuro di voler eliminare il libro "${bookTitle}"?\n\nQuesta azione non può essere annullata.`);
   
   if (!confirmDelete) {
@@ -331,7 +331,7 @@ async function handleDeleteBook(bookId, bookTitle) {
   try {
     console.log(`🗑️ Eliminazione del libro con ID: ${bookId}`);
 
-    // Effettua la chiamata DELETE
+    // effettua la chiamata DELETE
     const response = await fetch(`${API_URL}/books/${bookId}`, {
       method: 'DELETE',
       headers: API_HEADERS
@@ -345,7 +345,7 @@ async function handleDeleteBook(bookId, bookTitle) {
     const responseData = await response.json();
     console.log("📥 Risposta eliminazione dal backend:", responseData);
 
-    // Rimuovi il libro dall'array locale
+    // rimuovi il libro dall'array locale
     const bookIndex = books.findIndex(book => 
       book.id === bookId || 
       book.codiceLibro === bookId || 
@@ -354,7 +354,7 @@ async function handleDeleteBook(bookId, bookTitle) {
     
     if (bookIndex !== -1) {
       books.splice(bookIndex, 1);
-      // Forza l'aggiornamento della reattività
+      // forza l'aggiornamento della reattività
       books = [...books];
     }
 
@@ -369,14 +369,14 @@ async function handleDeleteBook(bookId, bookTitle) {
   }
 }
 
-// Funzione alternativa con modal di conferma personalizzato (opzionale)
+// funzione alternativa con modal di conferma personalizzato
 async function handleDeleteBookWithModal(book) {
-  // Imposta il libro da eliminare
+  // imposta il libro da eliminare
   bookToDelete = book;
   showDeleteConfirmModal = true;
 }
 
-// Funzione per confermare l'eliminazione dal modal
+// funzione per confermare l'eliminazione dal modal
 async function confirmDelete() {
   if (!bookToDelete) return;
   
@@ -416,7 +416,7 @@ function resetNewBook() {
     showEditBookModal = true;
   }
  
-  // Funzione per aggiungere/rimuovere categorie
+  // funzione per aggiungere/rimuovere categorie
   function toggleCategory(categoriesArray, category) {
     const index = categoriesArray.indexOf(category);
     if (index > -1) {
@@ -472,7 +472,7 @@ function resetNewBook() {
     </div>
   {/if}
  
-  <!-- Statistiche -->
+  <!-- statistiche -->
   <div class="container mx-auto px-6 -mt-8">
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       <div class="stat-card {isDarkMode ? 'bg-gray-800' : 'bg-gray-50'} rounded-lg shadow-md hover:shadow-lg transition flex items-center space-x-4">
@@ -524,12 +524,12 @@ function resetNewBook() {
       </div>
     </div>        
  
-    <!-- Controlli -->
+    <!-- controlli -->
     <div class="card {isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg mb-8">
       <div class="card-body">
         <div class="flex flex-wrap gap-4 items-center justify-between">
           <div class="flex flex-wrap gap-4 items-center">
-            <!-- Ricerca -->
+            <!-- ricerca -->
             <div class="form-control">
               <div class="input-group">
                 <input type="text" placeholder="Cerca libri..." class="input input-bordered {isDarkMode ? 'bg-gray-700 text-white border-gray-600' : ''}" bind:value={searchTerm} />
@@ -541,7 +541,7 @@ function resetNewBook() {
               </div>
             </div>
  
-            <!-- Filtro Categoria -->
+            <!-- filtro Categoria -->
             <select class="select select-bordered {isDarkMode ? 'bg-gray-700 text-white border-gray-600' : ''}" bind:value={selectedCategory}>
               <option value="all">Tutte le categorie</option>
               {#each categories as category}
@@ -549,7 +549,7 @@ function resetNewBook() {
               {/each}
             </select>
  
-            <!-- Filtro Biblioteca -->
+            <!-- filtro Biblioteca -->
             <select class="select select-bordered {isDarkMode ? 'bg-gray-700 text-white border-gray-600' : ''}" bind:value={selectedLibrary}>
               <option value="">Tutte le biblioteche</option>
               {#each libraries as library}
@@ -558,7 +558,7 @@ function resetNewBook() {
             </select>
           </div>
  
-          <!-- Pulsante Aggiungi -->
+          <!-- pulsante Aggiungi -->
           <button class="btn border-none outline-none primary-color text-white hover:bg-[var(--primary-color-darker)] transition-all duration-300 flex items-center gap-1" on:click={() => showAddBookModal = true} disabled={loading}>
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
@@ -569,7 +569,7 @@ function resetNewBook() {
       </div>
     </div>
  
-    <!-- Tabella Libri -->
+    <!-- tabella libri -->
 <div class="card {isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg">
   <div class="card-body">
   <h2 class="card-title text-2xl mb-6 {isDarkMode ? 'text-white' : ''}">Gestione Libri</h2>
@@ -613,13 +613,13 @@ function resetNewBook() {
   </td>
   <td>
                     <div class="flex gap-2">
-                      <!-- Pulsante Modifica (PUT) -->
+                      <!-- pulsante modifica (PUT) -->
                       <button class="btn btn-sm btn-ghost {isDarkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-200'}" on:click={() => openEditModal(book)} disabled={loading} title="Modifica libro">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                         </svg>
                       </button>
-                      <!-- Pulsante Elimina (DELETE) -->
+                      <!-- pulsante elimina (DELETE) -->
                       <button 
                         class="btn btn-sm btn-ghost text-error hover:bg-error hover:text-white {isDarkMode ? 'hover:bg-red-600' : ''}" 
                         on:click={() => handleDeleteBookWithModal(book)} 
@@ -648,7 +648,7 @@ function resetNewBook() {
     </div>
   </div>
  
-  <!-- Modal Aggiungi Libro -->
+  <!-- modal aggiungi libro -->
   {#if showAddBookModal}
     <div class="modal modal-open">
       <div class="modal-box {isDarkMode ? 'bg-gray-800 text-white' : 'bg-white'} max-w-2xl">
@@ -860,7 +860,7 @@ function resetNewBook() {
 </div>
 {/if}
 
-<!-- Modal Conferma Eliminazione (opzionale - alternativo al confirm() nativo) -->
+<!-- Modal Conferma Eliminazione  -->
 {#if showDeleteConfirmModal && bookToDelete}
   <div class="modal modal-open">
     <div class="modal-box {isDarkMode ? 'bg-gray-800 text-white' : 'bg-white'}">

@@ -30,13 +30,13 @@
     let categories = $state([]);
     let filteredBooks = $state([]);
 
-    // Funzione per ottenere l'immagine del libro in base alla posizione
+    // funzione per ottenere l'immagine del libro in base alla posizione
     function getBookImage(index) {
         const pattern = [primoLibro, terzoLibro, quartoLibro];
         return pattern[index % pattern.length];
     }
 
-    // Posizioni statiche predefinite per i libri sulla scaffalatura
+    // posizioni statiche predefinite per i libri sulla scaffalatura
     const staticBookPositions = [
         { image: libri, left: '7%', top: '29%', width: '36%' },
         { image: libri, left: '59%', top: '29%', width: '36%' },
@@ -57,7 +57,7 @@
         });
     }
 
-    // Calcola le posizioni in base al numero di libri nella biblioteca
+    // calcola le posizioni in base al numero di libri nella biblioteca
     let bookPositions = $derived(
         library?.books ? generateBookPositions(library.books.length) : []
     );
@@ -66,20 +66,20 @@
     console.log("handleBookClick chiamato con:", bookTitle);
     console.log("bookDetails disponibili:", Object.keys(bookDetails));
     
-    // Verifica solo se esistono i dettagli del libro
+    // verifica solo se esistono i dettagli del libro
     if (!bookDetails[bookTitle]) {
         console.error("Dettagli libro non trovati in bookDetails:", bookTitle);
         console.log("Titoli disponibili:", Object.keys(bookDetails));
         return;
     }
 
-    // Trova l'indice del libro per l'immagine (se esiste in library.books)
+    // trova l'indice del libro per l'immagine (se esiste in library.books)
     const bookIndex = library?.books ? library.books.indexOf(bookTitle) : 0;
     
     selectedBook = {
         title: bookTitle,
         details: bookDetails[bookTitle],
-        // Usa l'immagine dal database o una immagine generata in base all'indice
+        // usa l'immagine dal database o una immagine generata in base all'indice
         image: bookDetails[bookTitle].immagine || getBookImage(Math.max(0, bookIndex))
     };
     
@@ -89,7 +89,7 @@
     showBookModal = true;
     bookingSuccess = false;
     
-    // Forza un re-render (se necessario)
+    // forza un re-render (se necessario)
     setTimeout(() => {
         console.log("showBookModal dopo timeout:", showBookModal);
     }, 100);
@@ -132,7 +132,7 @@
         bookingSuccess = false;
         showToast('Invio prenotazione in corso...', 'info');
         
-        // Parametri semplici per EmailJS
+        // parametri semplici per EmailJS
         const templateParams = {
             libro_titolo: selectedBook.title,
             libro_autore: selectedBook.details.autore || 'Non specificato',
@@ -147,7 +147,7 @@
         console.log('Invio email a: gregoryd324@gmail.com');
         console.log('Parametri:', templateParams);
 
-        // Usa emailjs.send con 4 parametri
+        // usa emailjs.send con 4 parametri
         const result = await emailjs.send(
             'service_opxdmeg',      // Service ID
             'template_0jmtcw9',     // Template ID  
@@ -157,11 +157,11 @@
 
         console.log('SUCCESS!', result.status, result.text);
         
-        // Successo
+        // successo
         bookingSuccess = true;
         showToast(`Prenotazione inviata per "${selectedBook.title}"!`, 'success');
         
-        // Chiudi dopo 3 secondi
+        // chiudi dopo 3 secondi
         setTimeout(() => {
             bookingSuccess = false;
             showBookModal = false;
@@ -175,9 +175,9 @@
 
 
 
-// 5. FUNZIONI DI SUPPORTO
+// FUNZIONI DI SUPPORTO
 function saveBookingLocally(book, params) {
-    // Salva in memoria per la sessione (non localStorage per Claude.ai)
+    // salva in memoria per la sessione (non localStorage per Claude.ai)
     if (!window.bookingHistory) {
         window.bookingHistory = [];
     }
@@ -191,7 +191,7 @@ function saveBookingLocally(book, params) {
 }
 
 function showToast(message, type = 'info') {
-    // Crea un toast notification semplice
+    // crea un toast notification semplice
     const toast = document.createElement('div');
     toast.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 transition-all duration-300 ${
         type === 'success' ? 'bg-green-500 text-white' : 
@@ -202,7 +202,7 @@ function showToast(message, type = 'info') {
     
     document.body.appendChild(toast);
     
-    // Rimuovi dopo 4 secondi
+    // rimuovi dopo 4 secondi
     setTimeout(() => {
         toast.style.opacity = '0';
         setTimeout(() => document.body.removeChild(toast), 300);
@@ -211,7 +211,7 @@ function showToast(message, type = 'info') {
     return toast;
 }
   
-    // Sottoscrizione allo store darkMode
+    // sottoscrizione allo store darkMode
     const unsubscribe = darkMode.subscribe(value => {
         isDarkMode = value;
         updateDarkModeClass();
@@ -282,7 +282,7 @@ function showToast(message, type = 'info') {
     });
   
     onMount(() => {
-    // Inizializza EmailJS se disponibile
+    // inizializza EmailJS se disponibile
     if (typeof emailjs !== 'undefined') {
         try {
             emailjs.init(EMAILJS_PUBLIC_KEY);
@@ -294,7 +294,7 @@ function showToast(message, type = 'info') {
         console.warn('EmailJS non trovato. Le prenotazioni non funzioneranno.');
     }
 
-    // Gestione dark mode
+    // gestione dark mode
     if (typeof document !== 'undefined') {
         const hasDarkMode = document.documentElement.classList.contains('dark');
         darkMode.set(hasDarkMode);
@@ -341,7 +341,7 @@ function showToast(message, type = 'info') {
                 </div>
             {:else}
                 <div class="flex flex-col md:flex-row gap-8">
-                    <!-- Pannello Info -->
+                    <!-- pannello info -->
                     <div class="w-full md:w-1/3 order-2 md:order-1">
                         <div class="rounded-lg p-4 shadow-lg h-full" class:bg-gray-800={isDarkMode} class:bg-white={!isDarkMode}>
                             <h2 class="text-xl font-bold mb-4 flex items-center dark:text-white">
@@ -351,7 +351,7 @@ function showToast(message, type = 'info') {
                                 Informazioni
                             </h2>
 
-                            <!-- Barra ricerca -->
+                            <!-- barra ricerca -->
                             <div class="mb-6 w-full">
                                 <div class="relative">
                                     <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500 dark:text-gray-400" fill="currentColor" viewBox="0 0 20 20">
@@ -365,7 +365,7 @@ function showToast(message, type = 'info') {
                                     />
                                 </div>
 
-                                <!-- Filtro categoria -->
+                                <!-- filtro categoria -->
                                 <div class="mt-3">
                                     <select
                                         bind:value={selectedCategory}
@@ -379,7 +379,7 @@ function showToast(message, type = 'info') {
                                 </div>
                             </div>
 
-                            <!-- Lista libri -->
+                            <!-- lista libri -->
                             <div>
                                 <h3 class="text-lg font-semibold mb-3 dark:text-white">Libri disponibili ({filteredBooks.length})</h3>
                                 <div class="max-h-full overflow-y-auto">
@@ -429,7 +429,7 @@ function showToast(message, type = 'info') {
                         </div>
                     </div>
 
-                    <!-- Mappa con libri -->
+                    <!-- mappa con libri -->
                     <div class="w-full md:w-2/3 order-1 md:order-2 relative">
                         <div class="rounded-lg shadow-lg overflow-hidden relative" class:bg-gray-900={isDarkMode} class:bg-white={!isDarkMode}>
                             {#if bookshelf}
@@ -440,7 +440,7 @@ function showToast(message, type = 'info') {
                                     onerror={handleImageError}
                                 />
 
-                                <!-- Scaffalature statiche -->
+                                <!-- scaffalature statiche -->
                                 {#each staticBookPositions as pos, i}
                                     <img 
                                         src={pos.image} 
@@ -454,7 +454,7 @@ function showToast(message, type = 'info') {
                                     />
                                 {/each}
 
-                                <!-- Libri singoli generati dinamicamente -->
+                                <!-- libri singoli generati dinamicamente -->
                                 {#if library?.books}
                                     {#each bookPositions as pos, i}
                                         <img 
@@ -496,7 +496,7 @@ function showToast(message, type = 'info') {
         </div>
     </main>
     <Footer />
-    <!-- Modal del libro -->
+    <!-- modal del libro -->
     {#if showBookModal && selectedBook}
     <div 
         class="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -509,7 +509,7 @@ function showToast(message, type = 'info') {
             style="opacity: 1; transform: scale(1);"
         >
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
-                <!-- Colonna sinistra - Copertina -->
+                <!-- colonna sinistra - copertina -->
                 <div class="md:col-span-1 flex flex-col items-center">
                     <img 
                         src={selectedBook.image} 
@@ -519,7 +519,7 @@ function showToast(message, type = 'info') {
                     />
                 </div>
                 
-                <!-- Colonna destra - Dettagli -->
+                <!-- colonna destra - dettagli -->
                 <div class="md:col-span-2">
                     <h2 class="text-2xl font-bold mb-2" class:text-white={isDarkMode}>
                         {selectedBook.title}
@@ -579,7 +579,7 @@ function showToast(message, type = 'info') {
                         </div>
                     </div>
                     
-                    <!-- Messaggio di successo o pulsante Prenota -->
+                    <!-- messaggio di successo o pulsante Prenota -->
                     {#if bookingSuccess}
                         <div class="mt-6 p-4 rounded-lg"
                             class:bg-green-100={!isDarkMode}
@@ -609,7 +609,7 @@ function showToast(message, type = 'info') {
                 </div>
             </div>
             
-            <!-- Pulsante chiusura -->
+            <!-- pulsante chiusura -->
             <button 
                 onclick={() => showBookModal = false}
                 class="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
