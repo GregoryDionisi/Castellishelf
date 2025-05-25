@@ -20,9 +20,11 @@
   let editingBook = null;  
   let searchTerm = '';
   let selectedCategory = 'all';
-  let categories = ['Geografia','Storia', 'Narrativa','Romanzo','Romanzo Storico', 'Tecnologia', 'Horror','Chimica', 'Meccanica', 'Psicologico', 'Thriller', 'Dramma', 'Saggio', 'Manuale', 'Informatica', 'Enciclopedia', 'Raccolta'];  
+  let categories = ['Geografia','Storia', 'Narrativa','Romanzo', 'Tecnologia', 'Horror','Chimica', 'Meccanica', 'Psicologico', 'Thriller', 'Dramma', 'Saggio', 'Manuale', 'Informatica', 'Enciclopedia', 'Raccolta'];  
   let loading = false;
   let error = null;
+  let showDeleteConfirmModal = false;
+  let bookToDelete = null;
  
   // Variabile locale per memorizzare il valore del darkMode dallo store
   let isDarkMode;
@@ -48,8 +50,9 @@
     titolo: '',
     casaEditrice: '',
     prestabile: 'VERO',
-    categoria: []
-  };
+    categoria: [],
+    immagine: ''
+};
  
   let stats = {
     totalBooks: 0,
@@ -182,12 +185,16 @@
   try {
     // 1. Prepara i dati per il backend (verifica i nomi dei campi!)
     const bookData = {
-      codiceLibro: newBook.codiceLibro,  // <<< Nome coerente col backend
+      codiceLibro: newBook.codiceLibro,
+      CDD: newBook.CDD || '',                    // Campo aggiunto
+      numeroInventario: newBook.numeroInventario || '', // Campo aggiunto
       titolo: newBook.titolo,
       autore: newBook.autore,
-      categoria: newBook.categoria,      // <<< Singolare, come nel backend
-      collocazione: newBook.collocazione || '',  // Default vuoto se undefined
-      prestabile: newBook.prestabile     // <<< Mandalo direttamente come 'VERO'/'FALSO'
+      categoria: newBook.categoria,              // Singolare come nel backend
+      collocazione: newBook.collocazione || '',
+      casaEditrice: newBook.casaEditrice || '',  // Campo aggiunto (camelCase)
+      prestabile: newBook.prestabile,            // Inviato come 'VERO'/'FALSO'
+      immagine: newBook.immagine || null        // Campo aggiunto
     };
  
     console.log("📤 Dati inviati al backend:", bookData); // Debug
@@ -229,21 +236,177 @@
     loading = false;
   }
 }
- 
- 
-  function resetNewBook() {
-    newBook = {
-      codiceLibro: '',
-      CDD: '',
-      numeroInventario: '',
-      collocazione: '',
-      autore: '',
-      titolo: '',
-      casaEditrice: '',
-      prestabile: 'VERO',
-      categoria: []
-    };
+
+// Funzione per modificare un libro esistente (PUT)
+async function handleEditBook() {
+  if (!editingBook.titolo || !editingBook.autore || !editingBook.codiceLibro) {
+    alert('Compila tutti i campi obbligatori!');
+    return;
   }
+
+  loading = true;
+  try {
+    // Prepara i dati per l'aggiornamento
+    const updateData = {
+      codiceLibro: editingBook.codiceLibro,
+      cdd: editingBook.CDD,
+      numeroInventario: editingBook.numeroInventario,
+      titolo: editingBook.titolo,
+      autore: editingBook.autore,
+      categoria: editingBook.categoria,
+      collocazione: editingBook.collocazione || '',
+      casaEditrice: editingBook.casaEditrice,
+      prestabile: editingBook.prestabile,
+      immagine: editingBook.immagine || null
+    };
+
+    console.log("📤 Dati di aggiornamento inviati:", updateData);
+
+    // Effettua la chiamata PUT usando l'ID del libro
+    const response = await fetch(`${API_URL}/books/${editingBook.id}`, {
+      method: 'PUT',
+      headers: API_HEADERS,
+      body: JSON.stringify(updateData)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Errore durante la modifica");
+    }
+
+    const responseData = await response.json();
+    console.log("📥 Risposta modifica dal backend:", responseData);
+
+    // Aggiorna il libro nell'array locale
+    const bookIndex = books.findIndex(book => book.id === editingBook.id);
+    if (bookIndex !== -1) {
+      books[bookIndex] = {
+        ...editingBook,
+        // Aggiorna con i dati confermati dal backend
+        codiceLibro: responseData["Codice libro"],
+        CDD: responseData["CDD"],
+        numeroInventario: responseData["Numero inventario"],
+        titolo: responseData["Titolo"],
+        autore: responseData["Autore"],
+        categoria: responseData["Categoria"],
+        collocazione: responseData["Collocazione"],
+        casaEditrice: responseData["Casa editrice"],
+        prestabile: responseData["Prestabile"],
+        immagine: responseData["Immagine"]
+      };
+      
+      // Forza l'aggiornamento della reattività
+      books = [...books];
+    }
+
+    updateStats();
+    alert("✅ Libro modificato con successo!");
+    showEditBookModal = false;
+    editingBook = null;
+
+  } catch (e) {
+    console.error("🔥 Errore durante la modifica:", e);
+    alert(`❌ Errore durante la modifica: ${e.message}`);
+  } finally {
+    loading = false;
+  }
+}
+
+// Funzione per chiudere il modal di modifica
+function closeEditModal() {
+  showEditBookModal = false;
+  editingBook = null;
+}
+
+// Funzione per eliminare un libro (DELETE)
+async function handleDeleteBook(bookId, bookTitle) {
+  // Conferma prima dell'eliminazione
+  const confirmDelete = confirm(`Sei sicuro di voler eliminare il libro "${bookTitle}"?\n\nQuesta azione non può essere annullata.`);
+  
+  if (!confirmDelete) {
+    return;
+  }
+
+  loading = true;
+  try {
+    console.log(`🗑️ Eliminazione del libro con ID: ${bookId}`);
+
+    // Effettua la chiamata DELETE
+    const response = await fetch(`${API_URL}/books/${bookId}`, {
+      method: 'DELETE',
+      headers: API_HEADERS
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Errore durante l'eliminazione");
+    }
+
+    const responseData = await response.json();
+    console.log("📥 Risposta eliminazione dal backend:", responseData);
+
+    // Rimuovi il libro dall'array locale
+    const bookIndex = books.findIndex(book => 
+      book.id === bookId || 
+      book.codiceLibro === bookId || 
+      book["Codice libro"] === bookId
+    );
+    
+    if (bookIndex !== -1) {
+      books.splice(bookIndex, 1);
+      // Forza l'aggiornamento della reattività
+      books = [...books];
+    }
+
+    updateStats();
+    alert(`✅ Libro "${bookTitle}" eliminato con successo!`);
+
+  } catch (e) {
+    console.error("🔥 Errore durante l'eliminazione:", e);
+    alert(`❌ Errore durante l'eliminazione: ${e.message}`);
+  } finally {
+    loading = false;
+  }
+}
+
+// Funzione alternativa con modal di conferma personalizzato (opzionale)
+async function handleDeleteBookWithModal(book) {
+  // Imposta il libro da eliminare
+  bookToDelete = book;
+  showDeleteConfirmModal = true;
+}
+
+// Funzione per confermare l'eliminazione dal modal
+async function confirmDelete() {
+  if (!bookToDelete) return;
+  
+  await handleDeleteBook(bookToDelete.id || bookToDelete.codiceLibro, bookToDelete.titolo);
+  
+  showDeleteConfirmModal = false;
+  bookToDelete = null;
+}
+
+//funzione per annullare l'eliminazione
+function cancelDelete() {
+  showDeleteConfirmModal = false;
+  bookToDelete = null;
+}
+ 
+ 
+function resetNewBook() {
+  newBook = {
+    codiceLibro: '',
+    CDD: '',
+    numeroInventario: '',
+    collocazione: '',
+    autore: '',
+    titolo: '',
+    casaEditrice: '',
+    prestabile: 'VERO',
+    categoria: [],
+    immagine: ''
+  };
+}
  
   function openEditModal(book) {
     editingBook = {
@@ -407,48 +570,48 @@
     </div>
  
     <!-- Tabella Libri -->
-    <div class="card {isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg">
-      <div class="card-body">
-        <h2 class="card-title text-2xl mb-6 {isDarkMode ? 'text-white' : ''}">Gestione Libri</h2>
-        <div class="overflow-x-auto">
-          <table class="table w-full {isDarkMode ? 'text-white' : ''}">
-            <thead>
-              <tr class="{isDarkMode ? 'text-gray-300' : ''}">
-                <th>Codice</th>
-                <th>Titolo</th>
-                <th>Autore</th>
-                <th>CDD</th>
-                <th>Num. Inventario</th>
-                <th>Collocazione</th>
-                <th>Categorie</th>
-                <th>Stato</th>
-                <th>Azioni</th>
-              </tr>
-            </thead>
-            <tbody>
-              {#each filteredBooks as book}
-                <tr class="{isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}">
-                  <td>{book.codiceLibro || '-'}</td>
-                  <td class="font-semibold">{book.titolo || '-'}</td>
-                  <td>{book.autore || '-'}</td>
-                  <td>{book.CDD || '-'}</td>
-                  <td>{book.numeroInventario || '-'}</td>
-                  <td>{book.collocazione || '-'}</td>
-                  <td>
-                    {#if book.categoria && book.categoria.length > 0}
-                      {#each book.categoria as cat}
-                        <span class="badge badge-outline mr-1 {isDarkMode ? 'border-gray-500 text-gray-300' : ''}">{cat}</span>
-                      {/each}
-                    {:else}
-                      <span class="text-gray-500">-</span>
-                    {/if}
-                  </td>
-                  <td>
-                    <span class="badge {book.prestabile === 'VERO' ? 'badge-success' : 'badge-warning'}">
-                      {book.prestabile === 'VERO' ? 'Disponibile' : 'Prestato'}
-                    </span>                          
-                  </td>
-                  <td>
+<div class="card {isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg">
+  <div class="card-body">
+  <h2 class="card-title text-2xl mb-6 {isDarkMode ? 'text-white' : ''}">Gestione Libri</h2>
+  <div class="overflow-x-auto">
+  <table class="table w-full {isDarkMode ? 'text-white' : ''} text-sm">
+  <thead>
+  <tr class="{isDarkMode ? 'text-gray-300' : ''}">
+  <th class="w-16">Codice</th>
+  <th class="w-48">Titolo</th>
+  <th class="w-32">Autore</th>
+  <th class="w-20">CDD</th>
+  <th class="w-20">Num. Inv.</th>
+  <th class="w-32">Collocazione</th>
+  <th class="w-28">Categorie</th>
+  <th class="w-24">Stato</th>
+  <th class="w-20">Azioni</th>
+  </tr>
+  </thead>
+  <tbody>
+                {#each filteredBooks as book}
+  <tr class="{isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}">
+  <td class="text-xs">{book.codiceLibro || '-'}</td>
+  <td class="font-semibold text-xs truncate max-w-0" title="{book.titolo || '-'}">{book.titolo || '-'}</td>
+  <td class="text-xs truncate max-w-0" title="{book.autore || '-'}">{book.autore || '-'}</td>
+  <td class="text-xs">{book.CDD || '-'}</td>
+  <td class="text-xs">{book.numeroInventario || '-'}</td>
+  <td class="text-xs truncate max-w-0" title="{book.collocazione || '-'}">{book.collocazione || '-'}</td>
+  <td class="text-xs">
+                      {#if book.categoria && book.categoria.length > 0}
+                        {#each book.categoria as cat}
+  <span class="badge badge-outline text-xs px-1 py-0 mr-1 {isDarkMode ? 'border-gray-500 text-gray-300' : ''}">{cat}</span>
+                        {/each}
+                      {:else}
+  <span class="text-gray-500">-</span>
+                      {/if}
+  </td>
+  <td>
+  <span class="badge badge-sm {book.prestabile === 'VERO' ? 'badge-success' : 'badge-warning'} text-xs">
+                        {book.prestabile === 'VERO' ? 'Disp.' : 'Prest.'}
+  </span>                          
+  </td>
+  <td>
                     <div class="flex gap-2">
                       <!-- Pulsante Modifica (PUT) -->
                       <button class="btn btn-sm btn-ghost {isDarkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-200'}" on:click={() => openEditModal(book)} disabled={loading} title="Modifica libro">
@@ -457,7 +620,12 @@
                         </svg>
                       </button>
                       <!-- Pulsante Elimina (DELETE) -->
-                      <button class="btn btn-sm btn-ghost text-error hover:bg-error hover:text-white {isDarkMode ? 'hover:bg-red-600' : ''}" on:click={() => handleDeleteBook(book.codiceLibro, book.titolo)} disabled={loading} title="Elimina libro">
+                      <button 
+                        class="btn btn-sm btn-ghost text-error hover:bg-error hover:text-white {isDarkMode ? 'hover:bg-red-600' : ''}" 
+                        on:click={() => handleDeleteBookWithModal(book)} 
+                        disabled={loading} 
+                        title="Elimina libro"
+                      >
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                         </svg>
@@ -581,6 +749,159 @@
       </div>
     </div>
   {/if}
+
+  <!-- Modal Modifica Libro -->
+{#if showEditBookModal && editingBook}
+<div class="modal modal-open">
+  <div class="modal-box {isDarkMode ? 'bg-gray-800 text-white' : 'bg-white'} max-w-2xl">
+    <h3 class="font-bold text-lg mb-4">Modifica Libro</h3>
+   
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Codice Libro -->
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Codice Libro *</span>
+        </label>
+        <input type="text" placeholder="Inserisci codice libro" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={editingBook.codiceLibro} />
+      </div>
+
+      <!-- CDD -->
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">CDD</span>
+        </label>
+        <input type="text" placeholder="Classificazione Decimale Dewey" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={editingBook.CDD} />
+      </div>
+
+      <!-- Numero Inventario -->
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Numero Inventario</span>
+        </label>
+        <input type="text" placeholder="Numero inventario" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={editingBook.numeroInventario} />
+      </div>
+
+      <!-- Collocazione -->
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Collocazione</span>
+        </label>
+        <input type="text" placeholder="Collocazione" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={editingBook.collocazione} />
+      </div>
+
+      <!-- Titolo -->
+      <div class="form-control md:col-span-2">
+        <label class="label">
+          <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Titolo *</span>
+        </label>
+        <input type="text" placeholder="Titolo del libro" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={editingBook.titolo} />
+      </div>
+
+      <!-- Autore -->
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Autore *</span>
+        </label>
+        <input type="text" placeholder="Nome autore" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={editingBook.autore} />
+      </div>
+
+      <!-- Casa Editrice -->
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Casa Editrice</span>
+        </label>
+        <input type="text" placeholder="Casa editrice" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={editingBook.casaEditrice} />
+      </div>
+
+      <!-- Stato -->
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Stato</span>
+        </label>
+        <select class="select select-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={editingBook.prestabile}>
+          <option value="VERO">Disponibile</option>
+          <option value="FALSO">Prestato</option>
+        </select>
+      </div>
+
+      <!-- Immagine URL -->
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">URL Immagine</span>
+        </label>
+        <input type="url" placeholder="https://esempio.com/immagine.jpg" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={editingBook.immagine} />
+      </div>
+
+      <!-- Categorie -->
+      <div class="form-control md:col-span-2">
+        <label class="label">
+          <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Categorie</span>
+        </label>
+        <div class="flex flex-wrap gap-2">
+          {#each categories as category}
+            <label class="cursor-pointer label">
+              <input type="checkbox" class="checkbox checkbox-primary"
+                     checked={editingBook.categoria.includes(category)}
+                     on:change={() => editingBook.categoria = toggleCategory(editingBook.categoria, category)} />
+              <span class="label-text ml-2 {isDarkMode ? 'text-gray-300' : ''}">{category}</span>
+            </label>
+          {/each}
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-action">
+      <button class="btn {isDarkMode ? 'btn-ghost' : ''}" on:click={closeEditModal}>Annulla</button>
+      <button class="btn btn-primary" on:click={handleEditBook} disabled={loading}>
+        {loading ? 'Salvando...' : 'Salva Modifiche'}
+      </button>
+    </div>
+  </div>
+</div>
+{/if}
+
+<!-- Modal Conferma Eliminazione (opzionale - alternativo al confirm() nativo) -->
+{#if showDeleteConfirmModal && bookToDelete}
+  <div class="modal modal-open">
+    <div class="modal-box {isDarkMode ? 'bg-gray-800 text-white' : 'bg-white'}">
+      <h3 class="font-bold text-lg text-error mb-4">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.732 18.5c-.77.833.192 2.5 1.732 2.5z"></path>
+        </svg>
+        Conferma Eliminazione
+      </h3>
+      
+      <div class="py-4">
+        <p class="text-lg mb-4">Sei sicuro di voler eliminare questo libro?</p>
+        
+        <div class="bg-gray-100 {isDarkMode ? 'bg-gray-700' : ''} p-4 rounded-lg">
+          <p><strong>Titolo:</strong> {bookToDelete.titolo}</p>
+          <p><strong>Autore:</strong> {bookToDelete.autore}</p>
+          <p><strong>Codice:</strong> {bookToDelete.codiceLibro}</p>
+          {#if bookToDelete.categoria && bookToDelete.categoria.length > 0}
+            <p><strong>Categorie:</strong> {bookToDelete.categoria.join(', ')}</p>
+          {/if}
+        </div>
+        
+        <div class="alert alert-warning mt-4">
+          <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.732 18.5c-.77.833.192 2.5 1.732 2.5z"></path>
+          </svg>
+          <span><strong>Attenzione:</strong> Questa azione non può essere annullata!</span>
+        </div>
+      </div>
+
+      <div class="modal-action">
+        <button class="btn {isDarkMode ? 'btn-ghost' : ''}" on:click={cancelDelete} disabled={loading}>
+          Annulla
+        </button>
+        <button class="btn btn-error" on:click={confirmDelete} disabled={loading}>
+          {loading ? 'Eliminando...' : 'Elimina Definitivamente'}
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
  
  
   <Footer />
