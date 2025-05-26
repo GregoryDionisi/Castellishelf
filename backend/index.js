@@ -37,6 +37,10 @@ app.use((req, res, next) => {
     }
     next();
 });
+
+app.get('/', (req, res) => {
+    res.json({ message: 'Backend API is running!' });
+  });
  
 // Endpoint per le librerie
 app.get('/libraries', async (req, res) => {
