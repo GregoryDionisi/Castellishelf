@@ -9,7 +9,6 @@
   import '$lib/styles/global.css';
 
   import Footer from '$lib/components/Footer.svelte';
-  import Statistics from '$lib/components/Statistics.svelte';
   import Header from '$lib/components/Header.svelte';
   
   // Configurazione API
@@ -672,7 +671,6 @@
     </div>
   </div>
 </main>
-<Statistics {libraries}/>
 </div>
 <Footer />
 </div>
