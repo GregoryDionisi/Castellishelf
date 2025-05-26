@@ -23,7 +23,7 @@
   let currentFloor = $state(0);
   const floors = [
     { id: 0, name: 'Piano Terra', icon: 'home' },
-    { id: 1, name: 'Primo Piano', icon: 'arrow-up-1' },
+    { id: 1, name: 'Piano Primo', icon: 'arrow-up-1' },
     { id: 2, name: 'Piano Secondo', icon: 'arrow-up-2' }
   ];
   
