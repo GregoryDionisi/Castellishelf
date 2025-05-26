@@ -191,6 +191,8 @@
     } else {
       userFavorites = [...userFavorites, libraryId];
     }
+    // Salva preferiti in localStorage
+    localStorage.setItem('favorites', JSON.stringify(userFavorites));
   }
   
   // gestore per il click su una biblioteca
