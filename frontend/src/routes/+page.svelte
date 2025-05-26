@@ -396,6 +396,10 @@
   }
   
   onMount(async () => {
+    const savedFavorites = localStorage.getItem('favorites');
+    if (savedFavorites) {
+      userFavorites = JSON.parse(savedFavorites);
+    }
     // carica i dati dalle API
     await Promise.all([fetchBooks(), fetchLibraries()]);
   });
