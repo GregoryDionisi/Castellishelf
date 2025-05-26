@@ -186,13 +186,15 @@
     showDetailsPanel = false;
   }
   
-  // Gestione dei preferiti
+  // gestione dei preferiti dell'utente
   function toggleFavorite(libraryId) {
     if (userFavorites.includes(libraryId)) {
       userFavorites = userFavorites.filter(id => id !== libraryId);
     } else {
       userFavorites = [...userFavorites, libraryId];
     }
+    // Salva preferiti in localStorage
+    localStorage.setItem('favorites', JSON.stringify(userFavorites));
   }
   
   // Gestore per il click su una biblioteca
