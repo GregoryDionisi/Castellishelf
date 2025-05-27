@@ -649,106 +649,114 @@ function resetNewBook() {
   </div>
  
   <!-- Modal Aggiungi Libro -->
-  {#if showAddBookModal}
-    <div class="modal modal-open">
-      <div class="modal-box {isDarkMode ? 'bg-gray-800 text-white' : 'bg-white'} max-w-2xl">
-        <h3 class="font-bold text-lg mb-4">Aggiungi Nuovo Libro</h3>
-       
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Codice Libro -->
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Codice Libro *</span>
+{#if showAddBookModal}
+<div class="modal modal-open">
+  <div class="modal-box {isDarkMode ? 'bg-gray-800 text-white' : 'bg-white'} max-w-2xl">
+    <h3 class="font-bold text-lg mb-4">Aggiungi Nuovo Libro</h3>
+   
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Codice Libro -->
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Codice Libro *</span>
+        </label>
+        <input type="text" placeholder="Inserisci codice libro" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.codiceLibro} />
+      </div>
+
+      <!-- CDD -->
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">CDD</span>
+        </label>
+        <input type="text" placeholder="Classificazione Decimale Dewey" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.CDD} />
+      </div>
+
+      <!-- Numero Inventario -->
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Numero Inventario</span>
+        </label>
+        <input type="text" placeholder="Numero inventario" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.numeroInventario} />
+      </div>
+
+      <!-- Collocazione -->
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Collocazione</span>
+        </label>
+        <input type="text" placeholder="Collocazione" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.collocazione} />
+      </div>
+
+      <!-- Titolo -->
+      <div class="form-control md:col-span-2">
+        <label class="label">
+          <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Titolo *</span>
+        </label>
+        <input type="text" placeholder="Titolo del libro" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.titolo} />
+      </div>
+
+      <!-- Autore -->
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Autore *</span>
+        </label>
+        <input type="text" placeholder="Nome autore" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.autore} />
+      </div>
+
+      <!-- Casa Editrice -->
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Casa Editrice</span>
+        </label>
+        <input type="text" placeholder="Casa editrice" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.casaEditrice} />
+      </div>
+
+      <!-- Immagine URL -->
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">URL Immagine</span>
+        </label>
+        <input type="url" placeholder="https://esempio.com/immagine.jpg" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.immagine} />
+      </div>
+
+      <!-- Stato -->
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Stato</span>
+        </label>
+        <select class="select select-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.prestabile}>
+          <option value="VERO">Disponibile</option>
+          <option value="FALSO">Prestato</option>
+        </select>
+      </div>
+
+      <!-- Categorie -->
+      <div class="form-control md:col-span-2">
+        <label class="label">
+          <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Categorie</span>
+        </label>
+        <div class="flex flex-wrap gap-2">
+          {#each categories as category}
+            <label class="cursor-pointer label">
+              <input type="checkbox" class="checkbox checkbox-primary"
+                     checked={newBook.categoria.includes(category)}
+                     on:change={() => newBook.categoria = toggleCategory(newBook.categoria, category)} />
+              <span class="label-text ml-2 {isDarkMode ? 'text-gray-300' : ''}">{category}</span>
             </label>
-            <input type="text" placeholder="Inserisci codice libro" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.codiceLibro} />
-          </div>
- 
-          <!-- CDD -->
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">CDD</span>
-            </label>
-            <input type="text" placeholder="Classificazione Decimale Dewey" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.CDD} />
-          </div>
- 
-          <!-- Numero Inventario -->
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Numero Inventario</span>
-            </label>
-            <input type="text" placeholder="Numero inventario" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.numeroInventario} />
-          </div>
- 
-          <!-- Collocazione -->
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Collocazione</span>
-            </label>
-            <input type="text" placeholder="Collocazione" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.collocazione} />
-          </div>
- 
-          <!-- Titolo -->
-          <div class="form-control md:col-span-2">
-            <label class="label">
-              <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Titolo *</span>
-            </label>
-            <input type="text" placeholder="Titolo del libro" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.titolo} />
-          </div>
- 
-          <!-- Autore -->
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Autore *</span>
-            </label>
-            <input type="text" placeholder="Nome autore" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.autore} />
-          </div>
- 
-          <!-- Casa Editrice -->
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Casa Editrice</span>
-            </label>
-            <input type="text" placeholder="Casa editrice" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.casaEditrice} />
-          </div>
- 
-          <!-- Stato -->
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Stato</span>
-            </label>
-            <select class="select select-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.prestabile}>
-              <option value="VERO">Disponibile</option>
-              <option value="FALSO">Prestato</option>
-            </select>
-          </div>
- 
-          <!-- Categorie -->
-          <div class="form-control md:col-span-2">
-            <label class="label">
-              <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Categorie</span>
-            </label>
-            <div class="flex flex-wrap gap-2">
-              {#each categories as category}
-                <label class="cursor-pointer label">
-                  <input type="checkbox" class="checkbox checkbox-primary"
-                         checked={newBook.categoria.includes(category)}
-                         on:change={() => newBook.categoria = toggleCategory(newBook.categoria, category)} />
-                  <span class="label-text ml-2 {isDarkMode ? 'text-gray-300' : ''}">{category}</span>
-                </label>
-              {/each}
-            </div>
-          </div>
-        </div>
- 
-        <div class="modal-action">
-          <button class="btn {isDarkMode ? 'btn-ghost' : ''}" on:click={() => { showAddBookModal = false; resetNewBook(); }}>Annulla</button>
-          <button class="btn btn-primary" on:click={handleAddBook} disabled={loading}>
-            {loading ? 'Aggiungendo...' : 'Aggiungi Libro'}
-          </button>
+          {/each}
         </div>
       </div>
     </div>
-  {/if}
+
+    <div class="modal-action">
+      <button class="btn {isDarkMode ? 'btn-ghost' : ''}" on:click={() => { showAddBookModal = false; resetNewBook(); }}>Annulla</button>
+      <button class="btn btn-primary" on:click={handleAddBook} disabled={loading}>
+        {loading ? 'Aggiungendo...' : 'Aggiungi Libro'}
+      </button>
+    </div>
+  </div>
+</div>
+{/if}
 
   <!-- Modal Modifica Libro -->
 {#if showEditBookModal && editingBook}
