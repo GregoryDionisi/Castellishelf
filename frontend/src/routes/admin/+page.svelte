@@ -5,7 +5,7 @@
   import Footer from '$lib/components/Footer.svelte';
   import '$lib/styles/global.css';
  
-  // URL 
+  // URL dell'API - modifica secondo la tua configurazione
   const API_URL = 'http://localhost:3001';
  const API_HEADERS = {
   'Content-Type': 'application/json',
@@ -26,10 +26,10 @@
   let showDeleteConfirmModal = false;
   let bookToDelete = null;
  
-  // variabile locale per memorizzare il valore del darkMode dallo store
+  // Variabile locale per memorizzare il valore del darkMode dallo store
   let isDarkMode;
  
-  // sottoscrizione allo store darkMode
+  // Sottoscrizione allo store darkMode
   const unsubscribe = darkMode.subscribe(value => {
     isDarkMode = value;
     if (typeof document !== 'undefined') {
@@ -64,22 +64,22 @@
   onMount(() => {
     loadData();
    
-    // controlla lo stato iniziale del tema
+    // Controlla lo stato iniziale del tema
     if (typeof document !== 'undefined') {
       const hasDarkMode = document.body.classList.contains('dark-mode');
-      // aggiorna lo store solo se diverso dallo stato attuale
+      // Aggiorna lo store solo se diverso dallo stato attuale
       if (hasDarkMode !== isDarkMode) {
         darkMode.set(hasDarkMode);
       }
     }
    
-    // pulizia della sottoscrizione quando il componente viene distrutto
+    // Pulizia della sottoscrizione quando il componente viene distrutto
     return () => {
       unsubscribe();
     };
   });
  
-  // handle dark mode cambiamenti da Header
+  // Handle dark mode changes from Header
   function handleDarkModeChange(event) {
     darkMode.set(event.detail.darkMode);
   }
@@ -103,7 +103,7 @@
     updateStats();
   }
  
-  // funzione per recuperare i libri dal backend
+  // Funzione per recuperare i libri dal backend
   async function fetchBooks() {
     loading = true;
     error = null;
@@ -138,7 +138,7 @@
     }
   }
  
-  // funzione per recuperare le biblioteche dal backend
+  // Funzione per recuperare le biblioteche dal backend
   async function fetchLibraries() {
     loading = true;
     error = null;
@@ -152,7 +152,7 @@
      
       const result = await response.json();
      
-      // mappa i dati usando gli ID numerici invece degli ID MongoDB
+      // Mappa i dati usando gli ID numerici invece degli ID MongoDB
       libraries = result.data.map(lib => {
         return {
           id: lib.library_id,
@@ -174,7 +174,7 @@
     }
   }
  
-  // funzione per aggiungere un nuovo libro (POST)
+  // Funzione per aggiungere un nuovo libro (POST)
  async function handleAddBook() {
   if (!newBook.titolo || !newBook.autore || !newBook.codiceLibro) {
     alert('Compila tutti i campi obbligatori!');
@@ -183,23 +183,23 @@
  
   loading = true;
   try {
-    //  Prepara i dati per il backend 
+    // 1. Prepara i dati per il backend (verifica i nomi dei campi!)
     const bookData = {
       codiceLibro: newBook.codiceLibro,
-      CDD: newBook.CDD || '',                  
-      numeroInventario: newBook.numeroInventario || '', 
+      CDD: newBook.CDD || '',                    // Campo aggiunto
+      numeroInventario: newBook.numeroInventario || '', // Campo aggiunto
       titolo: newBook.titolo,
       autore: newBook.autore,
-      categoria: newBook.categoria,             
+      categoria: newBook.categoria,              // Singolare come nel backend
       collocazione: newBook.collocazione || '',
-      casaEditrice: newBook.casaEditrice || '',  
-      prestabile: newBook.prestabile,         
-      immagine: newBook.immagine || null       
+      casaEditrice: newBook.casaEditrice || '',  // Campo aggiunto (camelCase)
+      prestabile: newBook.prestabile,            // Inviato come 'VERO'/'FALSO'
+      immagine: newBook.immagine || null        // Campo aggiunto
     };
  
-    console.log("📤 Dati inviati al backend:", bookData); 
+    console.log("📤 Dati inviati al backend:", bookData); // Debug
  
-    // effettua la chiamata POST
+    // 2. Effettua la chiamata POST
     const response = await fetch(`${API_URL}/books`, {
       method: 'POST',
       headers: API_HEADERS,
@@ -212,17 +212,17 @@
     }
  
     const responseData = await response.json();
-    console.log("📥 Risposta dal backend:", responseData); 
+    console.log("📥 Risposta dal backend:", responseData); // Debug
  
-    // aggiornamento ottimizzato dell'UI
+    // 3. Aggiornamento ottimizzato dell'UI
     const addedBook = {
-      ...newBook,                       
-      id: responseData.id,            
-      CDD: responseData.CDD || "",      
+      ...newBook,                       // Mantieni tutti i dati del form
+      id: responseData.id,              // Aggiungi l'ID restituito dal backend
+      CDD: responseData.CDD || "",      // Valori opzionali con fallback
       numeroInventario: responseData.numeroInventario || ""
     };
  
-    books.unshift(addedBook); //aggiungi in cima all'array
+    books.unshift(addedBook); // Aggiungi in cima all'array (più veloce di [...books])
     updateStats();
    
     alert("✅ Libro aggiunto con successo!");
@@ -237,7 +237,7 @@
   }
 }
 
-// funzione per modificare un libro esistente (PUT)
+// Funzione per modificare un libro esistente (PUT)
 async function handleEditBook() {
   if (!editingBook.titolo || !editingBook.autore || !editingBook.codiceLibro) {
     alert('Compila tutti i campi obbligatori!');
@@ -246,7 +246,7 @@ async function handleEditBook() {
 
   loading = true;
   try {
-    // prepara i dati per l'aggiornamento
+    // Prepara i dati per l'aggiornamento
     const updateData = {
       codiceLibro: editingBook.codiceLibro,
       cdd: editingBook.CDD,
@@ -262,7 +262,7 @@ async function handleEditBook() {
 
     console.log("📤 Dati di aggiornamento inviati:", updateData);
 
-    // effettua la chiamata PUT usando l'ID del libro
+    // Effettua la chiamata PUT usando l'ID del libro
     const response = await fetch(`${API_URL}/books/${editingBook.id}`, {
       method: 'PUT',
       headers: API_HEADERS,
@@ -277,12 +277,12 @@ async function handleEditBook() {
     const responseData = await response.json();
     console.log("📥 Risposta modifica dal backend:", responseData);
 
-    // aggiorna il libro nell'array locale
+    // Aggiorna il libro nell'array locale
     const bookIndex = books.findIndex(book => book.id === editingBook.id);
     if (bookIndex !== -1) {
       books[bookIndex] = {
         ...editingBook,
-        // aggiorna con i dati confermati dal backend
+        // Aggiorna con i dati confermati dal backend
         codiceLibro: responseData["Codice libro"],
         CDD: responseData["CDD"],
         numeroInventario: responseData["Numero inventario"],
@@ -295,7 +295,7 @@ async function handleEditBook() {
         immagine: responseData["Immagine"]
       };
       
-      // forza l'aggiornamento della reattività
+      // Forza l'aggiornamento della reattività
       books = [...books];
     }
 
@@ -312,15 +312,15 @@ async function handleEditBook() {
   }
 }
 
-// funzione per chiudere il modal di modifica
+// Funzione per chiudere il modal di modifica
 function closeEditModal() {
   showEditBookModal = false;
   editingBook = null;
 }
 
-// funzione per eliminare un libro (DELETE)
+// Funzione per eliminare un libro (DELETE)
 async function handleDeleteBook(bookId, bookTitle) {
-  // conferma prima dell'eliminazione
+  // Conferma prima dell'eliminazione
   const confirmDelete = confirm(`Sei sicuro di voler eliminare il libro "${bookTitle}"?\n\nQuesta azione non può essere annullata.`);
   
   if (!confirmDelete) {
@@ -331,7 +331,7 @@ async function handleDeleteBook(bookId, bookTitle) {
   try {
     console.log(`🗑️ Eliminazione del libro con ID: ${bookId}`);
 
-    // effettua la chiamata DELETE
+    // Effettua la chiamata DELETE
     const response = await fetch(`${API_URL}/books/${bookId}`, {
       method: 'DELETE',
       headers: API_HEADERS
@@ -345,7 +345,7 @@ async function handleDeleteBook(bookId, bookTitle) {
     const responseData = await response.json();
     console.log("📥 Risposta eliminazione dal backend:", responseData);
 
-    // rimuovi il libro dall'array locale
+    // Rimuovi il libro dall'array locale
     const bookIndex = books.findIndex(book => 
       book.id === bookId || 
       book.codiceLibro === bookId || 
@@ -354,7 +354,7 @@ async function handleDeleteBook(bookId, bookTitle) {
     
     if (bookIndex !== -1) {
       books.splice(bookIndex, 1);
-      // forza l'aggiornamento della reattività
+      // Forza l'aggiornamento della reattività
       books = [...books];
     }
 
@@ -369,14 +369,14 @@ async function handleDeleteBook(bookId, bookTitle) {
   }
 }
 
-// funzione alternativa con modal di conferma personalizzato
+// Funzione alternativa con modal di conferma personalizzato (opzionale)
 async function handleDeleteBookWithModal(book) {
-  // imposta il libro da eliminare
+  // Imposta il libro da eliminare
   bookToDelete = book;
   showDeleteConfirmModal = true;
 }
 
-// funzione per confermare l'eliminazione dal modal
+// Funzione per confermare l'eliminazione dal modal
 async function confirmDelete() {
   if (!bookToDelete) return;
   
@@ -416,7 +416,7 @@ function resetNewBook() {
     showEditBookModal = true;
   }
  
-  // funzione per aggiungere/rimuovere categorie
+  // Funzione per aggiungere/rimuovere categorie
   function toggleCategory(categoriesArray, category) {
     const index = categoriesArray.indexOf(category);
     if (index > -1) {
@@ -472,7 +472,7 @@ function resetNewBook() {
     </div>
   {/if}
  
-  <!-- statistiche -->
+  <!-- Statistiche -->
   <div class="container mx-auto px-6 -mt-8">
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       <div class="stat-card {isDarkMode ? 'bg-gray-800' : 'bg-gray-50'} rounded-lg shadow-md hover:shadow-lg transition flex items-center space-x-4">
@@ -524,12 +524,12 @@ function resetNewBook() {
       </div>
     </div>        
  
-    <!-- controlli -->
+    <!-- Controlli -->
     <div class="card {isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg mb-8">
       <div class="card-body">
         <div class="flex flex-wrap gap-4 items-center justify-between">
           <div class="flex flex-wrap gap-4 items-center">
-            <!-- ricerca -->
+            <!-- Ricerca -->
             <div class="form-control">
               <div class="input-group">
                 <input type="text" placeholder="Cerca libri..." class="input input-bordered {isDarkMode ? 'bg-gray-700 text-white border-gray-600' : ''}" bind:value={searchTerm} />
@@ -541,7 +541,7 @@ function resetNewBook() {
               </div>
             </div>
  
-            <!-- filtro Categoria -->
+            <!-- Filtro Categoria -->
             <select class="select select-bordered {isDarkMode ? 'bg-gray-700 text-white border-gray-600' : ''}" bind:value={selectedCategory}>
               <option value="all">Tutte le categorie</option>
               {#each categories as category}
@@ -549,7 +549,7 @@ function resetNewBook() {
               {/each}
             </select>
  
-            <!-- filtro Biblioteca -->
+            <!-- Filtro Biblioteca -->
             <select class="select select-bordered {isDarkMode ? 'bg-gray-700 text-white border-gray-600' : ''}" bind:value={selectedLibrary}>
               <option value="">Tutte le biblioteche</option>
               {#each libraries as library}
@@ -558,7 +558,7 @@ function resetNewBook() {
             </select>
           </div>
  
-          <!-- pulsante Aggiungi -->
+          <!-- Pulsante Aggiungi -->
           <button class="btn border-none outline-none primary-color text-white hover:bg-[var(--primary-color-darker)] transition-all duration-300 flex items-center gap-1" on:click={() => showAddBookModal = true} disabled={loading}>
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
@@ -569,7 +569,7 @@ function resetNewBook() {
       </div>
     </div>
  
-    <!-- tabella libri -->
+    <!-- Tabella Libri -->
 <div class="card {isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg">
   <div class="card-body">
   <h2 class="card-title text-2xl mb-6 {isDarkMode ? 'text-white' : ''}">Gestione Libri</h2>
@@ -613,13 +613,13 @@ function resetNewBook() {
   </td>
   <td>
                     <div class="flex gap-2">
-                      <!-- pulsante modifica (PUT) -->
+                      <!-- Pulsante Modifica (PUT) -->
                       <button class="btn btn-sm btn-ghost {isDarkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-200'}" on:click={() => openEditModal(book)} disabled={loading} title="Modifica libro">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                         </svg>
                       </button>
-                      <!-- pulsante elimina (DELETE) -->
+                      <!-- Pulsante Elimina (DELETE) -->
                       <button 
                         class="btn btn-sm btn-ghost text-error hover:bg-error hover:text-white {isDarkMode ? 'hover:bg-red-600' : ''}" 
                         on:click={() => handleDeleteBookWithModal(book)} 
@@ -648,107 +648,115 @@ function resetNewBook() {
     </div>
   </div>
  
-  <!-- modal aggiungi libro -->
-  {#if showAddBookModal}
-    <div class="modal modal-open">
-      <div class="modal-box {isDarkMode ? 'bg-gray-800 text-white' : 'bg-white'} max-w-2xl">
-        <h3 class="font-bold text-lg mb-4">Aggiungi Nuovo Libro</h3>
-       
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Codice Libro -->
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Codice Libro *</span>
+  <!-- Modal Aggiungi Libro -->
+{#if showAddBookModal}
+<div class="modal modal-open">
+  <div class="modal-box {isDarkMode ? 'bg-gray-800 text-white' : 'bg-white'} max-w-2xl">
+    <h3 class="font-bold text-lg mb-4">Aggiungi Nuovo Libro</h3>
+   
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Codice Libro -->
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Codice Libro *</span>
+        </label>
+        <input type="text" placeholder="Inserisci codice libro" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.codiceLibro} />
+      </div>
+
+      <!-- CDD -->
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">CDD</span>
+        </label>
+        <input type="text" placeholder="Classificazione Decimale Dewey" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.CDD} />
+      </div>
+
+      <!-- Numero Inventario -->
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Numero Inventario</span>
+        </label>
+        <input type="text" placeholder="Numero inventario" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.numeroInventario} />
+      </div>
+
+      <!-- Collocazione -->
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Collocazione</span>
+        </label>
+        <input type="text" placeholder="Collocazione" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.collocazione} />
+      </div>
+
+      <!-- Titolo -->
+      <div class="form-control md:col-span-2">
+        <label class="label">
+          <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Titolo *</span>
+        </label>
+        <input type="text" placeholder="Titolo del libro" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.titolo} />
+      </div>
+
+      <!-- Autore -->
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Autore *</span>
+        </label>
+        <input type="text" placeholder="Nome autore" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.autore} />
+      </div>
+
+      <!-- Casa Editrice -->
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Casa Editrice</span>
+        </label>
+        <input type="text" placeholder="Casa editrice" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.casaEditrice} />
+      </div>
+
+      <!-- Immagine URL -->
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">URL Immagine</span>
+        </label>
+        <input type="url" placeholder="https://esempio.com/immagine.jpg" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.immagine} />
+      </div>
+
+      <!-- Stato -->
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Stato</span>
+        </label>
+        <select class="select select-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.prestabile}>
+          <option value="VERO">Disponibile</option>
+          <option value="FALSO">Prestato</option>
+        </select>
+      </div>
+
+      <!-- Categorie -->
+      <div class="form-control md:col-span-2">
+        <label class="label">
+          <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Categorie</span>
+        </label>
+        <div class="flex flex-wrap gap-2">
+          {#each categories as category}
+            <label class="cursor-pointer label">
+              <input type="checkbox" class="checkbox checkbox-primary"
+                     checked={newBook.categoria.includes(category)}
+                     on:change={() => newBook.categoria = toggleCategory(newBook.categoria, category)} />
+              <span class="label-text ml-2 {isDarkMode ? 'text-gray-300' : ''}">{category}</span>
             </label>
-            <input type="text" placeholder="Inserisci codice libro" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.codiceLibro} />
-          </div>
- 
-          <!-- CDD -->
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">CDD</span>
-            </label>
-            <input type="text" placeholder="Classificazione Decimale Dewey" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.CDD} />
-          </div>
- 
-          <!-- Numero Inventario -->
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Numero Inventario</span>
-            </label>
-            <input type="text" placeholder="Numero inventario" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.numeroInventario} />
-          </div>
- 
-          <!-- Collocazione -->
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Collocazione</span>
-            </label>
-            <input type="text" placeholder="Collocazione" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.collocazione} />
-          </div>
- 
-          <!-- Titolo -->
-          <div class="form-control md:col-span-2">
-            <label class="label">
-              <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Titolo *</span>
-            </label>
-            <input type="text" placeholder="Titolo del libro" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.titolo} />
-          </div>
- 
-          <!-- Autore -->
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Autore *</span>
-            </label>
-            <input type="text" placeholder="Nome autore" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.autore} />
-          </div>
- 
-          <!-- Casa Editrice -->
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Casa Editrice</span>
-            </label>
-            <input type="text" placeholder="Casa editrice" class="input input-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.casaEditrice} />
-          </div>
- 
-          <!-- Stato -->
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Stato</span>
-            </label>
-            <select class="select select-bordered {isDarkMode ? 'bg-gray-700 border-gray-600' : ''}" bind:value={newBook.prestabile}>
-              <option value="VERO">Disponibile</option>
-              <option value="FALSO">Prestato</option>
-            </select>
-          </div>
- 
-          <!-- Categorie -->
-          <div class="form-control md:col-span-2">
-            <label class="label">
-              <span class="label-text {isDarkMode ? 'text-gray-300' : ''}">Categorie</span>
-            </label>
-            <div class="flex flex-wrap gap-2">
-              {#each categories as category}
-                <label class="cursor-pointer label">
-                  <input type="checkbox" class="checkbox checkbox-primary"
-                         checked={newBook.categoria.includes(category)}
-                         on:change={() => newBook.categoria = toggleCategory(newBook.categoria, category)} />
-                  <span class="label-text ml-2 {isDarkMode ? 'text-gray-300' : ''}">{category}</span>
-                </label>
-              {/each}
-            </div>
-          </div>
-        </div>
- 
-        <div class="modal-action">
-          <button class="btn {isDarkMode ? 'btn-ghost' : ''}" on:click={() => { showAddBookModal = false; resetNewBook(); }}>Annulla</button>
-          <button class="btn btn-primary" on:click={handleAddBook} disabled={loading}>
-            {loading ? 'Aggiungendo...' : 'Aggiungi Libro'}
-          </button>
+          {/each}
         </div>
       </div>
     </div>
-  {/if}
+
+    <div class="modal-action">
+      <button class="btn {isDarkMode ? 'btn-ghost' : ''}" on:click={() => { showAddBookModal = false; resetNewBook(); }}>Annulla</button>
+      <button class="btn btn-primary" on:click={handleAddBook} disabled={loading}>
+        {loading ? 'Aggiungendo...' : 'Aggiungi Libro'}
+      </button>
+    </div>
+  </div>
+</div>
+{/if}
 
   <!-- Modal Modifica Libro -->
 {#if showEditBookModal && editingBook}
@@ -860,7 +868,7 @@ function resetNewBook() {
 </div>
 {/if}
 
-<!-- Modal Conferma Eliminazione  -->
+<!-- Modal Conferma Eliminazione (opzionale - alternativo al confirm() nativo) -->
 {#if showDeleteConfirmModal && bookToDelete}
   <div class="modal modal-open">
     <div class="modal-box {isDarkMode ? 'bg-gray-800 text-white' : 'bg-white'}">
