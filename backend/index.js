@@ -1,51 +1,71 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const { MongoClient } = require('mongodb');
+const { MongoClient, ObjectId } = require('mongodb');
 require('dotenv').config();
- 
-const app = express();
-app.use(cors());
-app.use(bodyParser.json());
- 
-const connectToDatabase = async () => {
-    try {
-        const client = await MongoClient.connect(process.env.MONGO_URI);
-        console.log('Database is connected');
-        return client.db('castellishelf');
-    } catch (err) {
-        console.log(err);
-        process.exit(1);
-    }
-}
- 
-let database;
- 
-const startServer = async () => {
-    database = await connectToDatabase();
-    app.listen(process.env.PORT || 3001, () => {
-        console.log(`Server is running on port ${process.env.PORT || 3001}`);
-    });
-}
- 
-startServer();
- 
-// Middleware per verificare la connessione al database
-app.use((req, res, next) => {
-    if (!database) {
-        return res.status(500).json({ message: 'Database is not connected' });
-    }
-    next();
-});
 
+const app = express();
+
+// Configurazione CORS
+app.use(cors({
+    origin: process.env.NODE_ENV === 'production' 
+        ? ['https://castellishelf.vercel.app']
+        : ['http://localhost:5173', 'http://localhost:3001'],
+    credentials: true
+}));
+
+app.use(bodyParser.json());
+
+// Variabile globale per la connessione al database (caching per Vercel)
+let cachedDb = null;
+
+const connectToDatabase = async () => {
+    if (cachedDb) {
+        return cachedDb;
+    }
+    
+    try {
+        const client = await MongoClient.connect(process.env.MONGO_URI, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+        });
+        console.log('Database is connected');
+        cachedDb = client.db('castellishelf');
+        return cachedDb;
+    } catch (err) {
+        console.error('Database connection error:', err);
+        throw err;
+    }
+};
+
+// Middleware per ottenere il database
+const getDatabaseMiddleware = async (req, res, next) => {
+    try {
+        req.db = await connectToDatabase();
+        next();
+    } catch (error) {
+        console.error('Database middleware error:', error);
+        res.status(500).json({ message: 'Database connection failed' });
+    }
+};
+
+// Applica il middleware a tutte le rotte
+app.use(getDatabaseMiddleware);
+
+// Route principale
 app.get('/', (req, res) => {
     res.json({ message: 'Backend API is running!' });
-  });
- 
+});
+
+// Route di health check
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', message: 'Server is running' });
+});
+
 // Endpoint per le librerie
 app.get('/libraries', async (req, res) => {
     try {
-        const rawLibraries = await database.collection('biblioteche').find({}).toArray();
+        const rawLibraries = await req.db.collection('biblioteche').find({}).toArray();
        
         const libraries = rawLibraries.map(lib => ({
             library_id: lib.id,
@@ -62,7 +82,7 @@ app.get('/libraries', async (req, res) => {
         res.status(500).json({ message: 'Error getting libraries' });
     }
 });
- 
+
 // Endpoint per i libri con filtri
 app.get('/books', async (req, res) => {
     try {
@@ -85,15 +105,14 @@ app.get('/books', async (req, res) => {
             query.collocazione = library;
         }
        
-        const result = await database.collection('libri').find(query).toArray();
+        const result = await req.db.collection('libri').find(query).toArray();
         res.json(result);
     } catch (err) {
         console.error('Error in /books:', err);
         res.status(500).json({ message: 'Error getting books' });
     }
 });
- 
- 
+
 // Endpoint per aggiungere un nuovo libro (POST)
 app.post('/books', async (req, res) => {
     try {
@@ -123,7 +142,7 @@ app.post('/books', async (req, res) => {
             "Immagine": immagine || null
         };
 
-        const result = await database.collection('libri').insertOne(newBook);
+        const result = await req.db.collection('libri').insertOne(newBook);
         
         res.status(201).json({
             message: 'Libro aggiunto con successo',
@@ -175,8 +194,6 @@ app.put('/books/:id', async (req, res) => {
             "Immagine": immagine || null
         };
 
-        // Trova e aggiorna il libro usando l'ID MongoDB
-        const { ObjectId } = require('mongodb');
         let query;
         
         // Prova prima con ObjectId se l'ID sembra essere un ObjectId MongoDB
@@ -187,7 +204,7 @@ app.put('/books/:id', async (req, res) => {
             query = { "Codice libro": parseInt(id) || id };
         }
 
-        const result = await database.collection('libri').updateOne(
+        const result = await req.db.collection('libri').updateOne(
             query,
             { $set: updateData }
         );
@@ -227,8 +244,6 @@ app.delete('/books/:id', async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Trova il libro prima di eliminarlo per restituire informazioni utili
-        const { ObjectId } = require('mongodb');
         let query;
         let bookToDelete;
         
@@ -241,14 +256,14 @@ app.delete('/books/:id', async (req, res) => {
         }
 
         // Trova il libro prima di eliminarlo
-        bookToDelete = await database.collection('libri').findOne(query);
+        bookToDelete = await req.db.collection('libri').findOne(query);
         
         if (!bookToDelete) {
             return res.status(404).json({ message: 'Libro non trovato' });
         }
 
         // Elimina il libro
-        const result = await database.collection('libri').deleteOne(query);
+        const result = await req.db.collection('libri').deleteOne(query);
 
         if (result.deletedCount === 0) {
             return res.status(404).json({ message: 'Libro non trovato o già eliminato' });
@@ -274,3 +289,14 @@ app.delete('/books/:id', async (req, res) => {
         res.status(500).json({ message: 'Errore durante l\'eliminazione del libro' });
     }
 });
+
+// Per Vercel, esporta l'app
+module.exports = app;
+
+// Solo per sviluppo locale
+if (process.env.NODE_ENV !== 'production') {
+    const PORT = process.env.PORT || 3001;
+    app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`);
+    });
+}
