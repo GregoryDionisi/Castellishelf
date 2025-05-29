@@ -12,8 +12,14 @@
   import Header from '$lib/components/Header.svelte';
   
   // Configurazione API
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-    
+  const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/\/$/, '');
+
+// Funzione helper per evitare doppi slash
+const apiCall = (endpoint) => {
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    return `${API_URL}${cleanEndpoint}`;
+};
+
   // Stati per il caricamento e gli errori (Svelte 5 runes)
   let loading = $state(false);
   let error = $state(null);
@@ -59,7 +65,7 @@
     error = null;
 
     try {
-      const response = await fetch(`${API_URL}/books`);
+      const response = await fetch(apiCall('books'));
 
       if (!response.ok) {
         throw new Error(`Errore HTTP: ${response.status}`);
