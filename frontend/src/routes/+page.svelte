@@ -11,14 +11,20 @@
   import Footer from '$lib/components/Footer.svelte';
   import Header from '$lib/components/Header.svelte';
   
-  // configurazione url
-  const API_URL = 'http://localhost:3001';
-  
-  // stati per il caricamento e gli errori 
+  // Configurazione API
+  const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/\/$/, '');
+
+// Funzione helper per evitare doppi slash
+const apiCall = (endpoint) => {
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    return `${API_URL}${cleanEndpoint}`;
+};
+
+  // Stati per il caricamento e gli errori (Svelte 5 runes)
   let loading = $state(false);
   let error = $state(null);
   
-  // stato per gestire il piano attualmente selezionato
+  // Stato per gestire il piano attualmente selezionato
   let currentFloor = $state(0);
   const floors = [
     { id: 0, name: 'Piano Terra', icon: 'home' },
@@ -26,39 +32,40 @@
     { id: 2, name: 'Piano Secondo', icon: 'arrow-up-2' }
   ];
   
-  // percorsi delle immagini per i diversi piani
+  // Percorsi delle immagini per i diversi piani
   const floorImages = [
     pianoTerra,
     pianoPrimo,
     pianoSecondo
   ];
   
-  // posizione del pallino blu che rappresenta l'utente
+  // Posizione del pallino che rappresenta l'utente
   const defaultUserPosition = { x: 33, y: 85 };
   let userPositionPercent = $state({ ...defaultUserPosition });
   
-  // stati per l'animazione
+  // Stato per l'animazione
   let isAnimating = $state(false);
   let selectedLibrary = $state(null);
   let showDetailsPanel = $state(false);
   
-  // termini di ricerca e filtri
+  // Termini di ricerca e filtri
   let searchTerm = $state("");
   let selectedCategory = $state("all");
   
+  // Dati che verranno popolati dalle API
   let books = $state([]);
   let libraries = $state([]);
   
-  // lista delle biblioteche preferite dall'utente
+  // Lista dei preferiti dell'utente
   let userFavorites = $state([]);
 
-  // funzione per recuperare i libri dal backend
+  // Funzione per recuperare i libri dal backend
   async function fetchBooks() {
     loading = true;
     error = null;
 
     try {
-      const response = await fetch(`${API_URL}/books`);
+      const response = await fetch(apiCall('books'));
 
       if (!response.ok) {
         throw new Error(`Errore HTTP: ${response.status}`);
@@ -87,13 +94,13 @@
     }
   }
 
-  // funzione per recuperare le biblioteche dal backend
+  // Funzione per recuperare le biblioteche dal backend
   async function fetchLibraries() {
     loading = true;
     error = null;
 
     try {
-      const response = await fetch(`${API_URL}/libraries`);
+      const response = await fetch(apiCall('libraries'));
 
       if (!response.ok) {
         throw new Error(`Errore HTTP: ${response.status}`);
@@ -101,7 +108,7 @@
 
       const result = await response.json();
       
-      // mappa i dati usando gli ID numerici invece degli ID MongoDB
+      // Mappa i dati usando gli ID numerici invece degli ID MongoDB
       libraries = result.data.map(lib => {        
         return {
           id: lib.library_id,
@@ -127,7 +134,7 @@
     darkMode.set(event.detail.darkMode);
   }
 
-  // funzione per estrarre il colore dell'icona del libro dal nome della biblioteca
+  // Funzione per estrarre il colore dal nome della biblioteca
   function getCorridorColor(libraryName) {
     if (libraryName.includes('Corridoio Verde') || libraryName.includes('Verde')) {
       return 'green';
@@ -140,7 +147,7 @@
     }
   }
   
-  // variabile derivata che produce un array nuovo con le categorie estratte per ogni libreria
+  // Variabile derivata che produce un array nuovo con le categorie estratte per ogni libreria
   let librariesWithCategories = $derived(libraries.map(lib => {
     // per ogni titolo di libro nella libreria, cerco il libro completo e prendo le categorie
     const libCategories = lib.books
@@ -157,15 +164,15 @@
     return { ...lib, categories: uniqueCategories };
   }));
 
-  // estrai tutte le categorie uniche dai libri
+  // Estrai tutte le categorie uniche dai libri
   let allBookCategories = $derived(Array.from(
     new Set(books.flatMap(book => book.categoria))
   ).sort());
 
-  // aggiungi "Tutte le categorie" all'inizio
+  // Aggiungi "Tutte le categorie" all'inizio
   let categories = $derived(["Tutte le categorie", ...allBookCategories]);
 
-  // filtra le biblioteche in base al piano scelto, ricerca e categoria
+  // Filtra le biblioteche in base al piano, ricerca e categoria
   let visibleLibraries = $derived(librariesWithCategories
     .filter(lib => lib.floor === currentFloor)
     .filter(lib => lib.name.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -175,10 +182,10 @@
         : lib.categories.includes(selectedCategory)
     ));
 
-  // gestione della selezione del piano
+  // Gestione della selezione del piano
   function selectFloor(floorId) {
     currentFloor = floorId;
-    // resetta la posizione del pallino a quella di default
+    // Resetta la posizione del pallino a quella di default
     userPositionPercent = { ...defaultUserPosition };
     selectedLibrary = null;
     showDetailsPanel = false;
@@ -195,7 +202,7 @@
     localStorage.setItem('favorites', JSON.stringify(userFavorites));
   }
   
-  // gestore per il click su una biblioteca
+  // Gestore per il click su una biblioteca
   async function handleLibraryClick(library) {
     if (isAnimating) return;
     
@@ -204,14 +211,14 @@
       return;
     }
 
-    // memorizza la biblioteca precedente
+    // Memorizza la biblioteca precedente
     const previousLibraryId = selectedLibrary ? selectedLibrary.id : null;
     
     selectedLibrary = library;
     isAnimating = true;
     showDetailsPanel = true;
     
-    // genera un percorso personalizzato per l'animazione
+    // Generiamo un percorso personalizzato per l'animazione
     const path = generatePath(
       userPositionPercent, 
       { x: library.xPercent, y: library.yPercent },
@@ -219,13 +226,13 @@
       previousLibraryId
     );
     
-    // anima il movimento lungo il percorso
+    // Animiamo il movimento lungo il percorso
     for (const point of path) {
       userPositionPercent = point;
       await new Promise(resolve => setTimeout(resolve, 30));
     }
     
-    // attende un momento prima di completare l'animazione
+    // Attendiamo un momento prima di completare l'animazione
     setTimeout(() => {
       isAnimating = false;
     }, 300);
@@ -234,56 +241,56 @@
   function generatePath(start, end, libraryId, previousLibraryId) {
     const steps = 15;
     
-    // definiamo alcuni percorsi standard riutilizzabili
+    // Definiamo alcuni percorsi standard riutilizzabili
     const standardRoutes = {
-      // percorso da sinistra a destra (tipo Scientifica → Umanistica)
+      // Percorso da sinistra a destra (tipo Scientifica → Umanistica)
       "leftToRight": [
-        { x: 38, y: 55 },    // punto partenza tipo Biblioteca Scientifica
-        { x: 36, y: 55 },    // leggermente a sinistra
-        { x: 36, y: 79 },    // discesa verticale
-        { x: 85, y: 79 },    // movimento orizzontale
-        { x: 85, y: 77 }     // aggiustamento finale e arrivo
+        { x: 38, y: 55 },    // Punto partenza tipo Biblioteca Scientifica
+        { x: 36, y: 55 },    // Leggermente a sinistra
+        { x: 36, y: 79 },    // Discesa verticale
+        { x: 85, y: 79 },    // Movimento orizzontale
+        { x: 85, y: 77 }     // Aggiustamento finale e arrivo
       ],
       
-      // percorso da destra a sinistra (tipo Umanistica → Scientifica)
+      // Percorso da destra a sinistra (tipo Umanistica → Scientifica)
       "rightToLeft": [
-        { x: 85, y: 77 },    // punto partenza tipo Biblioteca Umanistica
-        { x: 85, y: 79 },    // leggermente verso l'alto
-        { x: 36, y: 79 },    // movimento orizzontale
-        { x: 36, y: 55 },    // salita verticale
-        { x: 38, y: 55 }     // aggiustamento finale e arrivo
+        { x: 85, y: 77 },    // Punto partenza tipo Biblioteca Umanistica
+        { x: 85, y: 79 },    // Leggermente verso l'alto
+        { x: 36, y: 79 },    // Movimento orizzontale
+        { x: 36, y: 55 },    // Salita verticale
+        { x: 38, y: 55 }     // Aggiustamento finale e arrivo
       ],
       
       "5-3": [
-        { x: 42, y: 80 },    // punto partenza (supposto per Corridoio Arancione)
-        { x: 36, y: 80 },    // leggermente in basso
-        { x: 36, y: 55 },    // movimento orizzontale verso le scale
+        { x: 42, y: 80 },    // Punto partenza (supposto per Corridoio Arancione)
+        { x: 36, y: 80 },    // Leggermente in basso
+        { x: 36, y: 55 },    // Movimento orizzontale verso le scale
         { x: 38, y: 55 }
       ],
       
       "3-5": [
-        { x: 38, y: 55 },    // punto partenza al secondo piano
-        { x: 36, y: 55 },    // movimento verso le scale
-        { x: 36, y: 80 },    // discesa al primo piano
+        { x: 38, y: 55 },    // Punto partenza al secondo piano
+        { x: 36, y: 55 },    // Movimento verso le scale
+        { x: 36, y: 80 },    // Discesa al primo piano
         { x: 42, y: 80 }
       ],
       
       "5-4": [
-        { x: 42, y: 80 },    // punto partenza (supposto per Corridoio Arancione)
-        { x: 42, y: 78 },    // leggermente in basso
-        { x: 85, y: 78 },    // movimento orizzontale verso le scale
+        { x: 42, y: 80 },    // Punto partenza (supposto per Corridoio Arancione)
+        { x: 42, y: 78 },    // Leggermente in basso
+        { x: 85, y: 78 },    // Movimento orizzontale verso le scale
         { x: 85, y: 77 }
       ],
       
       "4-5": [
-        { x: 85, y: 77 },    // punto partenza al secondo piano
-        { x: 85, y: 78 },    // movimento verso le scale
-        { x: 42, y: 78 },    // discesa al primo piano
+        { x: 85, y: 77 },    // Punto partenza al secondo piano
+        { x: 85, y: 78 },    // Movimento verso le scale
+        { x: 42, y: 78 },    // Discesa al primo piano
         { x: 42, y: 80 }
       ]
     };
     
-    // mappa delle coppie che utilizzano percorsi standard
+    // Mappa delle coppie che utilizzano percorsi standard
     const routePatterns = {
       "leftToRight": ["1-2", "3-4", "6-7"],
       "rightToLeft": ["2-1", "4-3", "7-6"],
@@ -293,11 +300,11 @@
       "4-5": ["4-5"]
     };
 
-    // controlla prima i percorsi speciali
+    // Controlla prima i percorsi speciali
     if (previousLibraryId) {
       const pathKey = `${previousLibraryId}-${libraryId}`;
       
-      // cerca se questa coppia usa uno dei percorsi standard
+      // Cerca se questa coppia usa uno dei percorsi standard
       for (const [routeType, pairs] of Object.entries(routePatterns)) {
         if (pairs.includes(pathKey)) {
           return interpolatePath(standardRoutes[routeType], steps);
@@ -305,7 +312,7 @@
       }
     }
     
-    // percorsi personalizzati per singola biblioteca
+    // Percorsi personalizzati per singola biblioteca
     const customPaths = {
       1: [ // Biblioteca Corridoio Verde Piano Terra
         { x: start.x, y: start.y }, 
@@ -354,25 +361,25 @@
       ]
     };
     
-    // se esiste un percorso standard per questa biblioteca
+    // Se esiste un percorso standard per questa biblioteca
     if (customPaths[libraryId]) {
       return interpolatePath(customPaths[libraryId], steps);
     }
 
-    // fallback vuoto (nessun movimento)
+    // Fallback vuoto (nessun movimento)
     return [end];
   }
 
-  // funzione di interpolazione del percorso
+  // Funzione di interpolazione del percorso
   function interpolatePath(waypoints, stepsPerSegment) {
     const result = [];
     
-    // per ogni segmento tra due waypoints
+    // Per ogni segmento tra due waypoints
     for (let i = 0; i < waypoints.length - 1; i++) {
       const start = waypoints[i];
       const end = waypoints[i + 1];
       
-      // crea steps punti interpolati tra start e end
+      // Crea steps punti interpolati tra start e end
       for (let step = 0; step <= stepsPerSegment; step++) {
         const t = step / stepsPerSegment;
         const x = start.x + (end.x - start.x) * t;
@@ -381,7 +388,7 @@
         result.push({ x, y });
       }
       
-      // rimuove l'ultimo punto per evitare duplicati (tranne per l'ultimo segmento)
+      // Rimuovi l'ultimo punto per evitare duplicati (tranne per l'ultimo segmento)
       if (i < waypoints.length - 2) {
         result.pop();
       }
@@ -409,13 +416,13 @@
   <div class="min-h-screen {$darkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'}">
     <Header {darkMode} on:darkModeChange={handleDarkModeChange}/>
 
-    <!-- contenitore centrale per la barra dei piani -->
+    <!-- Contenitore centrale per la barra dei piani -->
     <div class="container mx-auto px-4">
-      <!-- menu dei piani -->
+      <!-- Menu dei piani - versione corretta -->
       <header class="flex sticky shadow-lg top-0 z-10 -mt-4 justify-center items-center mb-6 primary-color p-4 rounded-lg 
            w-full max-w-3xl mx-auto">
   
-  <!-- contenitore per i pulsanti dei piani -->
+  <!-- Contenitore per i pulsanti dei piani -->
   <div class="flex space-x-6">
     {#each floors as floor}
       <button 
@@ -451,9 +458,9 @@
 
 
 
-<!-- container principale con la mappa e il pannello informativo -->
+<!-- Container principale con la mappa e il pannello informativo -->
 <main class="container mx-auto px-4 flex flex-col md:flex-row gap-6">
-  <!-- pannello informativo a sinistra -->
+  <!-- Pannello informativo a sinistra -->
   <div class="w-full md:w-1/3 order-2 md:order-1">
             <div class="{$darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg p-4 shadow-lg h-full">
       <h2 class="text-xl font-bold mb-4 flex items-center">
@@ -462,7 +469,7 @@
         </svg>
         Informazioni
       </h2>
-      <!-- barra di ricerca migliorata -->
+      <!-- Barra di ricerca migliorata -->
 <div class="search-box mb-6 w-full">
   <div class="relative">
     <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500 dark:text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
@@ -476,7 +483,7 @@
     />
   </div>
   
-  <!-- filtro per categorie -->
+  <!-- Filtro per categorie -->
   <div class="category-filter mt-3">
     <select 
       bind:value={selectedCategory}
@@ -549,7 +556,7 @@
           <p>Seleziona una biblioteca sulla mappa per visualizzare le informazioni dettagliate.</p>
         </div>
         
-        <!-- sezione Preferiti, visibile solo quando non c'è una biblioteca selezionata -->
+        <!-- Sezione Preferiti, visibile solo quando non c'è una biblioteca selezionata -->
         {#if userFavorites.length > 0}
           <div class="favorites-section mt-6" transition:slide>
             <h3 class="text-lg font-semibold mb-3 flex items-center">
@@ -585,10 +592,10 @@
     </div>
   </div>
   
-  <!-- mappa a destra -->
+  <!-- Mappa a destra -->
   <div class="w-full md:w-2/3 order-1 md:order-2 relative">
     <div class="map-container rounded-lg shadow-lg overflow-hidden">
-      <!-- immagine della mappa -->
+      <!-- Immagine della mappa -->
       {#if floorImages[currentFloor]}
         <img 
           src={floorImages[currentFloor]} 
@@ -597,7 +604,7 @@
           onerror={handleMapImageError}
         />
       {:else}
-        <!-- fallback quando l'immagine non è disponibile -->
+        <!-- Fallback quando l'immagine non è disponibile -->
         <div class="w-full h-96 flex items-center justify-center">
           <div class="text-center">
             <svg class="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -614,7 +621,7 @@
       class="absolute w-5 h-5 bg-blue-500 rounded-full border-2 border-white shadow-lg transform -translate-x-1/2 -translate-y-1/2"
       style="left: {userPositionPercent.x}%; top: {userPositionPercent.y}%; z-index: 10;"
     >
-      <!-- effetto ping -->
+      <!-- Effetto ping migliorato -->
       <div class="ping-animation"></div>
     </div>
       
@@ -629,7 +636,7 @@
       <div class="library-marker-container">
         <div class="library-marker {selectedLibrary && selectedLibrary.id === library.id ? 'active' : ''}"
         data-corridor-color={getCorridorColor(library.name)}>
-     <!-- icona personalizzata in base alla categoria principale -->
+     <!-- Icona personalizzata in base alla categoria principale -->
      {#if library.categories.includes('science')}
        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
          <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path>
@@ -649,14 +656,14 @@
      {/if}
    </div>
         
-        <!-- badge per indicare i preferiti -->
+        <!-- Badge per indicare i preferiti -->
         {#if userFavorites.includes(library.id)}
           <div class="absolute -top-2 -right-2 w-4 h-4 bg-yellow-400 rounded-full border border-white"></div>
         {/if}
       </div>  
     </button>
 
-    <!-- tooltip per il nome della biblioteca quando si passa sopra -->
+    <!-- Tooltip per il nome della biblioteca quando si passa sopra -->
     {#if selectedLibrary && selectedLibrary.id === library.id}
       <div 
       class="tooltip absolute px-3 py-2 rounded-lg shadow-lg text-sm font-medium {$darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'}"
