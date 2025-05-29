@@ -6,8 +6,8 @@
   import '$lib/styles/global.css';
  
   // URL dell'API - modifica secondo la tua configurazione
-  const API_URL = 'http://localhost:3001';
- const API_HEADERS = {
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+  const API_HEADERS = {
   'Content-Type': 'application/json',
   'Accept': 'application/json'
 };

@@ -12,8 +12,8 @@
   import Header from '$lib/components/Header.svelte';
   
   // Configurazione API
-  const API_URL = 'http://localhost:3001';
-  
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    
   // Stati per il caricamento e gli errori (Svelte 5 runes)
   let loading = $state(false);
   let error = $state(null);
