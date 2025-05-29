@@ -100,7 +100,7 @@ const apiCall = (endpoint) => {
     error = null;
 
     try {
-      const response = await fetch(`${API_URL}/libraries`);
+      const response = await fetch(apiCall('libraries'));
 
       if (!response.ok) {
         throw new Error(`Errore HTTP: ${response.status}`);

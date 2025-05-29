@@ -1,13 +1,20 @@
 export async function load({ params }) {
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-  
+  // Configurazione API
+  const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/\/$/, '');
+
+// Funzione helper per evitare doppi slash
+const apiCall = (endpoint) => {
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    return `${API_URL}${cleanEndpoint}`;
+};
+
   let books = [];
   let libraries = [];
   let error = null;
 
   // Recupera i libri
   try {
-    const response = await fetch(`${API_URL}/books`);
+    const response = await fetch(apiCall('books'));
     if (!response.ok) throw new Error(`Errore HTTP: ${response.status}`);
 
     const result = await response.json();
@@ -32,7 +39,7 @@ export async function load({ params }) {
 
   // Recupera le biblioteche
   try {
-    const response = await fetch(`${API_URL}/libraries`);
+    const response = await fetch(apiCall('libraries'));
     if (!response.ok) throw new Error(`Errore HTTP: ${response.status}`);
 
     const result = await response.json();
@@ -63,10 +70,10 @@ export async function load({ params }) {
       prestabile: book.prestabile,
       categoria: book.categoria,
       immagine: book.immagine,
-      collocazione: book.collocazione,        // <- AGGIUNTO
-      codiceLibro: book.codiceLibro,          // <- AGGIUNTO
-      numeroInventario: book.numeroInventario, // <- AGGIUNTO
-      CDD: book.CDD                           // <- AGGIUNTO
+      collocazione: book.collocazione,      
+      codiceLibro: book.codiceLibro,         
+      numeroInventario: book.numeroInventario, 
+      CDD: book.CDD                           
     };
   });
 

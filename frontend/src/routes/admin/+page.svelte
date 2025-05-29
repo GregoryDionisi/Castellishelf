@@ -6,7 +6,14 @@
   import '$lib/styles/global.css';
  
   // URL dell'API - modifica secondo la tua configurazione
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+  // Configurazione API
+  const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/\/$/, '');
+
+// Funzione helper per evitare doppi slash
+const apiCall = (endpoint) => {
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    return `${API_URL}${cleanEndpoint}`;
+};
   const API_HEADERS = {
   'Content-Type': 'application/json',
   'Accept': 'application/json'
@@ -109,7 +116,7 @@
     error = null;
    
     try {
-      const response = await fetch(`${API_URL}/books`);
+      const response = await fetch(apiCall('books'));
      
       if (!response.ok) {
         throw new Error(`Errore HTTP: ${response.status}`);
@@ -144,7 +151,7 @@
     error = null;
    
     try {
-      const response = await fetch(`${API_URL}/libraries`);
+      const response = await fetch(apiCall('libraries'));
      
       if (!response.ok) {
         throw new Error(`Errore HTTP: ${response.status}`);
@@ -200,7 +207,7 @@
     console.log("📤 Dati inviati al backend:", bookData); // Debug
  
     // 2. Effettua la chiamata POST
-    const response = await fetch(`${API_URL}/books`, {
+    const response = await fetch(apiCall('books'), {
       method: 'POST',
       headers: API_HEADERS,
       body: JSON.stringify(bookData)
@@ -263,7 +270,7 @@ async function handleEditBook() {
     console.log("📤 Dati di aggiornamento inviati:", updateData);
 
     // Effettua la chiamata PUT usando l'ID del libro
-    const response = await fetch(`${API_URL}/books/${editingBook.id}`, {
+    const response = await fetch(apiCall(`books/${editingBook.id}`), {
       method: 'PUT',
       headers: API_HEADERS,
       body: JSON.stringify(updateData)
@@ -332,7 +339,7 @@ async function handleDeleteBook(bookId, bookTitle) {
     console.log(`🗑️ Eliminazione del libro con ID: ${bookId}`);
 
     // Effettua la chiamata DELETE
-    const response = await fetch(`${API_URL}/books/${bookId}`, {
+    const response = await fetch(apiCall(`books/${bookId}`), {
       method: 'DELETE',
       headers: API_HEADERS
     });
