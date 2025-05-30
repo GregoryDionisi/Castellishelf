@@ -290,6 +290,228 @@ app.delete('/books/:id', async (req, res) => {
     }
 });
 
+// POST - Aggiungi un libro a una biblioteca specifica
+app.post('/libraries/:id/books', async (req, res) => {
+    try {
+        const collection = req.db.collection('biblioteche');
+        const libraryId = parseInt(req.params.id);
+        const { bookTitle } = req.body;
+
+        // Validazione ID biblioteca
+        if (isNaN(libraryId)) {
+            return res.status(400).json({ message: 'ID biblioteca non valido' });
+        }
+
+        // Validazione titolo libro
+        if (!bookTitle || typeof bookTitle !== 'string' || bookTitle.trim() === '') {
+            return res.status(400).json({ message: 'Titolo del libro mancante o non valido' });
+        }
+
+        // Trova la biblioteca
+        const library = await collection.findOne({ id: libraryId });
+
+        if (!library) {
+            return res.status(404).json({ message: 'Biblioteca non trovata' });
+        }
+
+        // Verifica se il libro è già presente nella biblioteca
+        const currentBooks = library.Libri || [];
+        const bookTitleTrimmed = bookTitle.trim();
+
+        if (currentBooks.includes(bookTitleTrimmed)) {
+            return res.status(409).json({ 
+                message: 'Il libro è già presente in questa biblioteca',
+                bookTitle: bookTitleTrimmed,
+                libraryName: library.Nome
+            });
+        }
+
+        // Aggiungi il libro all'array Libri
+        const result = await collection.updateOne(
+            { id: libraryId },
+            { 
+                $push: { 
+                    Libri: bookTitleTrimmed 
+                } 
+            }
+        );
+
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ message: 'Biblioteca non trovata per l\'aggiornamento' });
+        }
+
+        // Recupera la biblioteca aggiornata
+        const updatedLibrary = await collection.findOne({ id: libraryId });
+
+        res.status(201).json({
+            message: 'Libro aggiunto alla biblioteca con successo',
+            bookTitle: bookTitleTrimmed,
+            libraryId: libraryId,
+            libraryName: library.Nome,
+            totalBooks: updatedLibrary.Libri.length,
+            books: updatedLibrary.Libri
+        });
+
+    } catch (error) {
+        console.error('Error adding book to library:', error);
+        res.status(500).json({ 
+            message: 'Errore nell\'aggiunta del libro alla biblioteca', 
+            error: error.message 
+        });
+    }
+});
+
+// DELETE - Rimuovi un libro da una biblioteca specifica
+app.delete('/libraries/:id/books', async (req, res) => {
+    try {
+        const collection = req.db.collection('biblioteche');
+        const libraryId = parseInt(req.params.id);
+        const { bookTitle } = req.body;
+
+        // Validazione ID biblioteca
+        if (isNaN(libraryId)) {
+            return res.status(400).json({ message: 'ID biblioteca non valido' });
+        }
+
+        // Validazione titolo libro
+        if (!bookTitle || typeof bookTitle !== 'string' || bookTitle.trim() === '') {
+            return res.status(400).json({ message: 'Titolo del libro mancante o non valido' });
+        }
+
+        const bookTitleTrimmed = bookTitle.trim();
+
+        // Rimuovi il libro dall'array Libri
+        const result = await collection.updateOne(
+            { id: libraryId },
+            { 
+                $pull: { 
+                    Libri: bookTitleTrimmed 
+                } 
+            }
+        );
+
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ message: 'Biblioteca non trovata' });
+        }
+
+        if (result.modifiedCount === 0) {
+            return res.status(404).json({ 
+                message: 'Libro non trovato nella biblioteca specificata',
+                bookTitle: bookTitleTrimmed
+            });
+        }
+
+        res.json({
+            message: 'Libro rimosso dalla biblioteca con successo',
+            bookTitle: bookTitleTrimmed,
+            libraryId: libraryId
+        });
+
+    } catch (error) {
+        console.error('Error removing book from library:', error);
+        res.status(500).json({ 
+            message: 'Errore nella rimozione del libro dalla biblioteca', 
+            error: error.message 
+        });
+    }
+});
+
+// PUT - Aggiorna il titolo di un libro in una biblioteca specifica
+app.put('/libraries/:id/books/update-title', async (req, res) => {
+    try {
+        const collection = req.db.collection('biblioteche');
+        const libraryId = parseInt(req.params.id);
+        const { oldTitle, newTitle } = req.body;
+
+        // Validazione ID biblioteca
+        if (isNaN(libraryId)) {
+            return res.status(400).json({ message: 'ID biblioteca non valido' });
+        }
+
+        // Validazione titoli
+        if (!oldTitle || typeof oldTitle !== 'string' || oldTitle.trim() === '') {
+            return res.status(400).json({ message: 'Titolo precedente del libro mancante o non valido' });
+        }
+
+        if (!newTitle || typeof newTitle !== 'string' || newTitle.trim() === '') {
+            return res.status(400).json({ message: 'Nuovo titolo del libro mancante o non valido' });
+        }
+
+        const oldTitleTrimmed = oldTitle.trim();
+        const newTitleTrimmed = newTitle.trim();
+
+        // Trova la biblioteca
+        const library = await collection.findOne({ id: libraryId });
+
+        if (!library) {
+            return res.status(404).json({ message: 'Biblioteca non trovata' });
+        }
+
+        // Verifica se il libro con il vecchio titolo esiste nella biblioteca
+        const currentBooks = library.Libri || [];
+        if (!currentBooks.includes(oldTitleTrimmed)) {
+            return res.status(404).json({ 
+                message: 'Libro con il titolo precedente non trovato nella biblioteca',
+                oldTitle: oldTitleTrimmed,
+                libraryName: library.Nome
+            });
+        }
+
+        // Verifica se il nuovo titolo non esiste già (evita duplicati)
+        if (oldTitleTrimmed !== newTitleTrimmed && currentBooks.includes(newTitleTrimmed)) {
+            return res.status(409).json({ 
+                message: 'Un libro con il nuovo titolo è già presente in questa biblioteca',
+                newTitle: newTitleTrimmed,
+                libraryName: library.Nome
+            });
+        }
+
+        // Aggiorna il titolo nell'array Libri
+        const result = await collection.updateOne(
+            { id: libraryId },
+            { 
+                $set: { 
+                    "Libri.$[element]": newTitleTrimmed 
+                } 
+            },
+            {
+                arrayFilters: [{ "element": oldTitleTrimmed }]
+            }
+        );
+
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ message: 'Biblioteca non trovata per l\'aggiornamento' });
+        }
+
+        if (result.modifiedCount === 0) {
+            return res.status(404).json({ 
+                message: 'Nessun libro aggiornato. Il titolo potrebbe non esistere nella biblioteca',
+                oldTitle: oldTitleTrimmed
+            });
+        }
+
+        // Recupera la biblioteca aggiornata
+        const updatedLibrary = await collection.findOne({ id: libraryId });
+
+        res.json({
+            message: 'Titolo del libro aggiornato con successo nella biblioteca',
+            oldTitle: oldTitleTrimmed,
+            newTitle: newTitleTrimmed,
+            libraryId: libraryId,
+            libraryName: library.Nome,
+            totalBooks: updatedLibrary.Libri.length,
+            books: updatedLibrary.Libri
+        });
+
+    } catch (error) {
+        console.error('Error updating book title in library:', error);
+        res.status(500).json({ 
+            message: 'Errore nell\'aggiornamento del titolo del libro nella biblioteca', 
+            error: error.message 
+        });
+    }
+});
+
 // Per Vercel, esporta l'app
 module.exports = app;
 

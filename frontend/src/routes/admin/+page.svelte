@@ -181,13 +181,13 @@ const apiCall = (endpoint) => {
     }
   }
  
-  // Funzione per aggiungere un nuovo libro (POST)
- async function handleAddBook() {
+// Funzione per aggiungere un nuovo libro (POST) con aggiornamento biblioteca
+async function handleAddBook() {
   if (!newBook.titolo || !newBook.autore || !newBook.codiceLibro) {
     alert('Compila tutti i campi obbligatori!');
     return;
   }
- 
+
   loading = true;
   try {
     // 1. Prepara i dati per il backend (verifica i nomi dei campi!)
@@ -203,48 +203,215 @@ const apiCall = (endpoint) => {
       prestabile: newBook.prestabile,            // Inviato come 'VERO'/'FALSO'
       immagine: newBook.immagine || null        // Campo aggiunto
     };
- 
+
     console.log("📤 Dati inviati al backend:", bookData); // Debug
- 
-    // 2. Effettua la chiamata POST
+
+    // 2. Effettua la chiamata POST per aggiungere il libro
     const response = await fetch(apiCall('books'), {
       method: 'POST',
       headers: API_HEADERS,
       body: JSON.stringify(bookData)
     });
- 
+
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || "Errore sconosciuto dal server");
     }
- 
+
     const responseData = await response.json();
     console.log("📥 Risposta dal backend:", responseData); // Debug
- 
-    // 3. Aggiornamento ottimizzato dell'UI
+
+    // 3. Se è specificata una collocazione (biblioteca), aggiorna anche la biblioteca
+    if (newBook.collocazione && newBook.collocazione.trim() !== '') {
+      try {
+        // Trova la biblioteca corrispondente alla collocazione
+        const targetLibrary = libraries.find(lib => 
+          lib.name === newBook.collocazione.trim()
+        );
+
+        if (targetLibrary) {
+          console.log(`📚 Aggiornamento biblioteca: ${targetLibrary.name} (ID: ${targetLibrary.id})`);
+
+          // Prepara i dati per aggiornare la biblioteca
+          const libraryUpdateData = {
+            bookTitle: newBook.titolo // Solo il titolo del libro
+          };
+
+          // Chiamata API per aggiungere il libro alla biblioteca
+          const libraryResponse = await fetch(apiCall(`libraries/${targetLibrary.id}/books`), {
+            method: 'POST',
+            headers: API_HEADERS,
+            body: JSON.stringify(libraryUpdateData)
+          });
+
+          if (!libraryResponse.ok) {
+            const libraryErrorData = await libraryResponse.json();
+            console.warn(`⚠️ Errore nell'aggiornamento della biblioteca: ${libraryErrorData.message}`);
+            // Non blocchiamo l'operazione principale, ma avvisiamo l'utente
+            alert(`✅ Libro aggiunto con successo!\n⚠️ Attenzione: Non è stato possibile aggiornare la biblioteca "${newBook.collocazione}"`);
+          } else {
+            const libraryResponseData = await libraryResponse.json();
+            console.log("📥 Biblioteca aggiornata:", libraryResponseData);
+            
+            // Aggiorna anche l'array locale delle biblioteche
+            const libraryIndex = libraries.findIndex(lib => lib.id === targetLibrary.id);
+            if (libraryIndex !== -1) {
+              if (!libraries[libraryIndex].books) {
+                libraries[libraryIndex].books = [];
+              }
+              libraries[libraryIndex].books.push(newBook.titolo);
+              // Forza l'aggiornamento della reattività
+              libraries = [...libraries];
+            }
+          }
+        } else {
+          console.warn(`⚠️ Biblioteca "${newBook.collocazione}" non trovata`);
+          alert(`✅ Libro aggiunto con successo!\n⚠️ Attenzione: Biblioteca "${newBook.collocazione}" non trovata`);
+        }
+      } catch (libraryError) {
+        console.error("🔥 Errore nell'aggiornamento biblioteca:", libraryError);
+        alert(`✅ Libro aggiunto con successo!\n⚠️ Errore nell'aggiornamento della biblioteca: ${libraryError.message}`);
+      }
+    }
+
+    // 4. Aggiornamento ottimizzato dell'UI
     const addedBook = {
       ...newBook,                       // Mantieni tutti i dati del form
       id: responseData.id,              // Aggiungi l'ID restituito dal backend
       CDD: responseData.CDD || "",      // Valori opzionali con fallback
       numeroInventario: responseData.numeroInventario || ""
     };
- 
+
     books.unshift(addedBook); // Aggiungi in cima all'array (più veloce di [...books])
     updateStats();
    
-    alert("✅ Libro aggiunto con successo!");
+    // Messaggio di successo appropriato
+    if (newBook.collocazione && newBook.collocazione.trim() !== '') {
+      alert(`✅ Libro "${newBook.titolo}" aggiunto con successo alla collezione e alla biblioteca "${newBook.collocazione}"!`);
+    } else {
+      alert(`✅ Libro "${newBook.titolo}" aggiunto con successo alla collezione!`);
+    }
+    
     showAddBookModal = false;
     resetNewBook();
- 
+
   } catch (e) {
     console.error("🔥 Errore dettagliato:", e);
-    alert(`✅ Libro aggiunto con successo!`);
+    alert(`❌ Errore durante l'aggiunta del libro: ${e.message}`);
   } finally {
     loading = false;
   }
 }
 
-// Funzione per modificare un libro esistente (PUT)
+// Funzione per eliminare un libro (DELETE) con rimozione dalle biblioteche
+async function handleDeleteBook(bookId, bookTitle) {
+  // Conferma prima dell'eliminazione
+  const confirmDelete = confirm(`Sei sicuro di voler eliminare il libro "${bookTitle}"?\n\nQuesta azione non può essere annullata.`);
+  
+  if (!confirmDelete) {
+    return;
+  }
+
+  loading = true;
+  try {
+    console.log(`🗑️ Eliminazione del libro con ID: ${bookId}`);
+
+    // Trova il libro da eliminare per ottenere la collocazione
+    const bookToDelete = books.find(book => 
+      book.id === bookId || 
+      book.codiceLibro === bookId || 
+      book["Codice libro"] === bookId
+    );
+
+    // 1. Effettua la chiamata DELETE per il libro
+    const response = await fetch(apiCall(`books/${bookId}`), {
+      method: 'DELETE',
+      headers: API_HEADERS
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Errore durante l'eliminazione");
+    }
+
+    const responseData = await response.json();
+    console.log("📥 Risposta eliminazione dal backend:", responseData);
+
+    // 2. Se il libro aveva una collocazione, rimuovilo anche dalla biblioteca
+    if (bookToDelete && bookToDelete.collocazione && bookToDelete.collocazione.trim() !== '') {
+      try {
+        // Trova la biblioteca corrispondente alla collocazione
+        const targetLibrary = libraries.find(lib => 
+          lib.name === bookToDelete.collocazione.trim()
+        );
+
+        if (targetLibrary) {
+          console.log(`📚 Rimozione dalla biblioteca: ${targetLibrary.name} (ID: ${targetLibrary.id})`);
+
+          // Prepara i dati per rimuovere il libro dalla biblioteca
+          const libraryDeleteData = {
+            bookTitle: bookTitle // Titolo del libro da rimuovere
+          };
+
+          // Chiamata API per rimuovere il libro dalla biblioteca
+          const libraryResponse = await fetch(apiCall(`libraries/${targetLibrary.id}/books`), {
+            method: 'DELETE',
+            headers: API_HEADERS,
+            body: JSON.stringify(libraryDeleteData)
+          });
+
+          if (!libraryResponse.ok) {
+            const libraryErrorData = await libraryResponse.json();
+            console.warn(`⚠️ Errore nella rimozione dalla biblioteca: ${libraryErrorData.message}`);
+          } else {
+            const libraryResponseData = await libraryResponse.json();
+            console.log("📥 Libro rimosso dalla biblioteca:", libraryResponseData);
+            
+            // Aggiorna anche l'array locale delle biblioteche
+            const libraryIndex = libraries.findIndex(lib => lib.id === targetLibrary.id);
+            if (libraryIndex !== -1 && libraries[libraryIndex].books) {
+              const bookIndex = libraries[libraryIndex].books.indexOf(bookTitle);
+              if (bookIndex !== -1) {
+                libraries[libraryIndex].books.splice(bookIndex, 1);
+                // Forza l'aggiornamento della reattività
+                libraries = [...libraries];
+              }
+            }
+          }
+        } else {
+          console.warn(`⚠️ Biblioteca "${bookToDelete.collocazione}" non trovata per la rimozione`);
+        }
+      } catch (libraryError) {
+        console.error("🔥 Errore nella rimozione dalla biblioteca:", libraryError);
+        // Non blocchiamo l'operazione principale
+      }
+    }
+
+    // 3. Rimuovi il libro dall'array locale
+    const bookIndex = books.findIndex(book => 
+      book.id === bookId || 
+      book.codiceLibro === bookId || 
+      book["Codice libro"] === bookId
+    );
+    
+    if (bookIndex !== -1) {
+      books.splice(bookIndex, 1);
+      // Forza l'aggiornamento della reattività
+      books = [...books];
+    }
+
+    updateStats();
+    alert(`✅ Libro "${bookTitle}" eliminato con successo!`);
+
+  } catch (e) {
+    console.error("🔥 Errore durante l'eliminazione:", e);
+    alert(`❌ Errore durante l'eliminazione: ${e.message}`);
+  } finally {
+    loading = false;
+  }
+}
+
+// Funzione per modificare un libro esistente (PUT) con aggiornamento biblioteche
 async function handleEditBook() {
   if (!editingBook.titolo || !editingBook.autore || !editingBook.codiceLibro) {
     alert('Compila tutti i campi obbligatori!');
@@ -253,6 +420,13 @@ async function handleEditBook() {
 
   loading = true;
   try {
+    // Trova il libro originale per confrontare i cambiamenti
+    const originalBook = books.find(book => book.id === editingBook.id);
+    const originalTitle = originalBook.titolo;
+    const originalCollocazione = originalBook.collocazione;
+    const newTitle = editingBook.titolo;
+    const newCollocazione = editingBook.collocazione || '';
+
     // Prepara i dati per l'aggiornamento
     const updateData = {
       codiceLibro: editingBook.codiceLibro,
@@ -269,7 +443,7 @@ async function handleEditBook() {
 
     console.log("📤 Dati di aggiornamento inviati:", updateData);
 
-    // Effettua la chiamata PUT usando l'ID del libro
+    // 1. Effettua la chiamata PUT usando l'ID del libro
     const response = await fetch(apiCall(`books/${editingBook.id}`), {
       method: 'PUT',
       headers: API_HEADERS,
@@ -284,7 +458,113 @@ async function handleEditBook() {
     const responseData = await response.json();
     console.log("📥 Risposta modifica dal backend:", responseData);
 
-    // Aggiorna il libro nell'array locale
+    // 2. Gestisci i cambiamenti nelle biblioteche
+    const titleChanged = originalTitle !== newTitle;
+    const collocazioneChanged = originalCollocazione !== newCollocazione;
+
+    // Se il titolo è cambiato, aggiorna tutte le biblioteche che lo contenevano
+    if (titleChanged) {
+      // Trova tutte le biblioteche che potrebbero contenere il libro
+      const librariesWithBook = libraries.filter(lib => 
+        lib.books && lib.books.includes(originalTitle)
+      );
+
+      for (const library of librariesWithBook) {
+        try {
+          console.log(`📚 Aggiornamento titolo in biblioteca: ${library.name} (ID: ${library.id})`);
+          
+          const updateTitleData = {
+            oldTitle: originalTitle,
+            newTitle: newTitle
+          };
+
+          const libraryUpdateResponse = await fetch(apiCall(`libraries/${library.id}/books/update-title`), {
+            method: 'PUT',
+            headers: API_HEADERS,
+            body: JSON.stringify(updateTitleData)
+          });
+
+          if (libraryUpdateResponse.ok) {
+            // Aggiorna l'array locale
+            const libraryIndex = libraries.findIndex(lib => lib.id === library.id);
+            if (libraryIndex !== -1 && libraries[libraryIndex].books) {
+              const bookIndex = libraries[libraryIndex].books.indexOf(originalTitle);
+              if (bookIndex !== -1) {
+                libraries[libraryIndex].books[bookIndex] = newTitle;
+              }
+            }
+          } else {
+            console.warn(`⚠️ Errore nell'aggiornamento titolo in biblioteca ${library.name}`);
+          }
+        } catch (libraryError) {
+          console.error(`🔥 Errore nell'aggiornamento biblioteca ${library.name}:`, libraryError);
+        }
+      }
+    }
+
+    // Se la collocazione è cambiata, gestisci lo spostamento
+    if (collocazioneChanged) {
+      // Rimuovi dalla biblioteca precedente (se esisteva)
+      if (originalCollocazione && originalCollocazione.trim() !== '') {
+        const oldLibrary = libraries.find(lib => lib.name === originalCollocazione.trim());
+        if (oldLibrary) {
+          try {
+            const removeData = { bookTitle: newTitle }; // Usa il nuovo titolo
+            await fetch(apiCall(`libraries/${oldLibrary.id}/books`), {
+              method: 'DELETE',
+              headers: API_HEADERS,
+              body: JSON.stringify(removeData)
+            });
+
+            // Aggiorna l'array locale
+            const libraryIndex = libraries.findIndex(lib => lib.id === oldLibrary.id);
+            if (libraryIndex !== -1 && libraries[libraryIndex].books) {
+              const bookIndex = libraries[libraryIndex].books.indexOf(newTitle);
+              if (bookIndex !== -1) {
+                libraries[libraryIndex].books.splice(bookIndex, 1);
+              }
+            }
+          } catch (error) {
+            console.warn(`⚠️ Errore rimozione da biblioteca precedente: ${error.message}`);
+          }
+        }
+      }
+
+      // Aggiungi alla nuova biblioteca (se specificata)
+      if (newCollocazione && newCollocazione.trim() !== '') {
+        const newLibrary = libraries.find(lib => lib.name === newCollocazione.trim());
+        if (newLibrary) {
+          try {
+            const addData = { bookTitle: newTitle };
+            const addResponse = await fetch(apiCall(`libraries/${newLibrary.id}/books`), {
+              method: 'POST',
+              headers: API_HEADERS,
+              body: JSON.stringify(addData)
+            });
+
+            if (addResponse.ok) {
+              // Aggiorna l'array locale
+              const libraryIndex = libraries.findIndex(lib => lib.id === newLibrary.id);
+              if (libraryIndex !== -1) {
+                if (!libraries[libraryIndex].books) {
+                  libraries[libraryIndex].books = [];
+                }
+                if (!libraries[libraryIndex].books.includes(newTitle)) {
+                  libraries[libraryIndex].books.push(newTitle);
+                }
+              }
+            }
+          } catch (error) {
+            console.warn(`⚠️ Errore aggiunta a nuova biblioteca: ${error.message}`);
+          }
+        }
+      }
+
+      // Forza l'aggiornamento della reattività delle biblioteche
+      libraries = [...libraries];
+    }
+
+    // 3. Aggiorna il libro nell'array locale
     const bookIndex = books.findIndex(book => book.id === editingBook.id);
     if (bookIndex !== -1) {
       books[bookIndex] = {
@@ -319,64 +599,13 @@ async function handleEditBook() {
   }
 }
 
+
 // Funzione per chiudere il modal di modifica
 function closeEditModal() {
   showEditBookModal = false;
   editingBook = null;
 }
 
-// Funzione per eliminare un libro (DELETE)
-async function handleDeleteBook(bookId, bookTitle) {
-  // Conferma prima dell'eliminazione
-  const confirmDelete = confirm(`Sei sicuro di voler eliminare il libro "${bookTitle}"?\n\nQuesta azione non può essere annullata.`);
-  
-  if (!confirmDelete) {
-    return;
-  }
-
-  loading = true;
-  try {
-    console.log(`🗑️ Eliminazione del libro con ID: ${bookId}`);
-
-    // Effettua la chiamata DELETE
-    const response = await fetch(apiCall(`books/${bookId}`), {
-      method: 'DELETE',
-      headers: API_HEADERS
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || "Errore durante l'eliminazione");
-    }
-
-    const responseData = await response.json();
-    console.log("📥 Risposta eliminazione dal backend:", responseData);
-
-    // Rimuovi il libro dall'array locale
-    const bookIndex = books.findIndex(book => 
-      book.id === bookId || 
-      book.codiceLibro === bookId || 
-      book["Codice libro"] === bookId
-    );
-    
-    if (bookIndex !== -1) {
-      books.splice(bookIndex, 1);
-      // Forza l'aggiornamento della reattività
-      books = [...books];
-    }
-
-    updateStats();
-    alert(`✅ Libro "${bookTitle}" eliminato con successo!`);
-
-  } catch (e) {
-    console.error("🔥 Errore durante l'eliminazione:", e);
-    alert(`❌ Errore durante l'eliminazione: ${e.message}`);
-  } finally {
-    loading = false;
-  }
-}
-
-// Funzione alternativa con modal di conferma personalizzato (opzionale)
 async function handleDeleteBookWithModal(book) {
   // Imposta il libro da eliminare
   bookToDelete = book;
